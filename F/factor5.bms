@@ -1,0 +1,63 @@
+# Factor 5 games
+#   Star Wars Rogue Leader II
+#   Star Wars Rogue Squadron III
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver 0.4.8d
+comtype unzip_dynamic
+endian big
+get OFFSET longlong
+get FOLDER_SIZE longlong
+log MEMORY_FILE OFFSET FOLDER_SIZE
+
+callfunction GET_NAMESZ 1
+
+set PATH string ""
+set NAME string ""
+set MYPOS long 0
+goto MYPOS MEMORY_FILE
+callfunction EXTRACT
+
+startfunction EXTRACT
+    string PATH += NAME
+    string PATH += /
+    math LIMIT = MYPOS
+    math LIMIT += FOLDER_SIZE
+    for
+        savepos MYPOS MEMORY_FILE
+        if MYPOS >= LIMIT
+            break
+        endif
+        get OFFSET longlong MEMORY_FILE
+        get SIZE longlong MEMORY_FILE
+        get DUMMY longlong MEMORY_FILE
+        get FOLDER_SIZE64 long MEMORY_FILE  # remember 0x80
+        get FOLDER_SIZE long MEMORY_FILE
+        getdstring NAME NAMESZ MEMORY_FILE
+        if FOLDER_SIZE == 0
+            set FNAME string PATH
+            string FNAME += NAME
+            clog FNAME OFFSET SIZE SIZE
+        else
+            callfunction EXTRACT
+        endif
+    next
+endfunction
+
+# NAMESZ guesser
+startfunction GET_NAMESZ
+    set NAMESZ long 0x20
+        get DUMMY longlong MEMORY_FILE
+        get DUMMY longlong MEMORY_FILE
+        get DUMMY longlong MEMORY_FILE
+        get DUMMY longlong MEMORY_FILE
+        getdstring DUMMY NAMESZ MEMORY_FILE
+        for
+            get DUMMY longlong MEMORY_FILE
+            if DUMMY != 0
+                break
+            endif
+            getdstring DUMMY 0x1c MEMORY_FILE
+            math NAMESZ += 0x20
+        next
+endfunction

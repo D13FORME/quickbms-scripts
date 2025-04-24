@@ -1,0 +1,7 @@
+# 3DES 168 bits (ecb) decryption
+# script for QuickBMS http://quickbms.aluigi.org
+
+#encryption 3des "mykey" ivec_for_cbc
+encryption 3des "mykey"
+get SIZE asize
+log "decrypted_file.dat" 0 SIZE

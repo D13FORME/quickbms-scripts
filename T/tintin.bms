@@ -1,0 +1,63 @@
+# The Adventures of Tintin (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzo1x
+idstring "ABE"
+get DUMMY byte
+get DUMMY long
+get DUMMY long
+get DUMMY long
+get DUMMY long
+get DUMMY long
+get NEXT long
+get DUMMY long
+get ROOT long
+get DUMMY long
+get DUMMY long  # packs?
+get FILES long
+do
+    goto NEXT
+    get FILES long
+    get PREV long
+    get NEXT long
+    for i = 0 < FILES
+        getdstring NAME 0x50
+        if NAME == ""
+            break   # in case the FILES calculation is wrong
+        endif
+        get ZERO long
+        get PREV_FILE long
+        get ZSIZE long
+        get TIMESTAMP longlong
+        get CRC long
+        get DUMMY long
+        get OFFSET long
+        get DUMMY long
+        get SIZE long
+        getdstring DUMMY 0x50
+        string NAME R= "_" "/"
+        savepos TMP
+        goto OFFSET
+        get ZSIZE long
+        get SIZE long
+        get DUMMY long
+        get TEST long
+        math OFFSET += 0x20
+        if TEST == 6
+            # unsupported
+            math SIZE = ZSIZE
+        endif
+        if ZSIZE == SIZE
+            goto OFFSET
+            getdstring SIGN 4
+            if SIGN == "LySE"
+                math OFFSET += 0x14
+                math SIZE   -= 0x14
+            endif
+            log NAME OFFSET SIZE
+        else
+            clog NAME OFFSET ZSIZE SIZE
+        endif
+        goto TMP
+    next i
+while NEXT != 0xffffffff

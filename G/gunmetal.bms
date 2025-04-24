@@ -1,0 +1,15 @@
+# Gun Metal encoded archives
+# script for QuickBMS http://quickbms.aluigi.org
+
+get FILES long
+for i = 1 to FILES
+    get DUMMY long
+    get OFFSET long
+    get FILESIZE long
+
+    filexor 0xab
+    log "" OFFSET FILESIZE
+    filexor ""
+next i
+
+

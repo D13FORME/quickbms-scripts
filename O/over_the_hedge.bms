@@ -1,0 +1,97 @@
+# Over The Hedge (script 0.2.2)
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDSE "index.ind" 0 EXISTS
+if EXISTS != 0
+
+    get SIZE asize
+    log MEMORY_FILE2 0 SIZE
+
+    get ARCHIVES long MEMORY_FILE2
+    endian guess ARCHIVES
+    math ARCHIVES /= 2
+    for ARCHIVE = 0 < ARCHIVES
+        get NAME_OFF long MEMORY_FILE2
+        get INFO_OFF long MEMORY_FILE2
+        savepos RESTORE_OFF MEMORY_FILE2
+
+        goto NAME_OFF MEMORY_FILE2
+        get ARCHIVE_NAME string MEMORY_FILE2
+        string NAME p= "%.8s.arc" ARCHIVE_NAME
+        open FDSE NAME 0 EXISTS
+
+        if EXISTS != 0
+            # automatic folder and sequential names
+            goto INFO_OFF MEMORY_FILE2
+            get FILES long MEMORY_FILE2
+            for i = 0 < FILES
+                get NAME_CRC long MEMORY_FILE2
+            next i
+            for i = 0 < FILES
+                get OFFSET long MEMORY_FILE2
+                get SIZE long MEMORY_FILE2
+                if ARCHIVE_NAME == "DataSets"
+                    goto OFFSET
+                    getdstring DUMMY 0xd
+                    get NAME string
+                    string NAME p= "%s/%s." ARCHIVE_NAME NAME
+                else
+                    string NAME p= "%s/%08x." ARCHIVE_NAME i
+                endif
+                callfunction SMART_DUMP 1
+            next i
+        endif
+
+        goto RESTORE_OFF MEMORY_FILE2
+    next ARCHIVE
+
+else
+
+    get DUMMY long  # 4
+    get FILES long
+    for i = 0 < FILES
+        get CRC long
+        get OFFSET long
+        get SIZE long
+        get NAME string
+        get TSTAMP longlong
+        callfunction SMART_DUMP 1
+    next i
+
+endif
+
+startfunction SMART_DUMP
+    if SIZE < 4
+        log NAME OFFSET SIZE
+    else
+        savepos TMP_OFF
+        goto OFFSET
+        getdstring SIGN 4
+
+        if SIGN == "fmt "
+            get FMT_SIZE long
+            log MEMORY_FILE 0 0
+            putdstring "RIFF" 4 MEMORY_FILE
+            xmath TMP "SIZE + 0xc"
+            put TMP long MEMORY_FILE
+            putdstring "WAVE" 4 MEMORY_FILE
+            append
+            math FMT_SIZE += 8
+            log MEMORY_FILE OFFSET FMT_SIZE
+            math OFFSET += FMT_SIZE
+            math SIZE   -= FMT_SIZE
+            goto 0 MEMORY_FILE SEEK_END
+            putdstring "data" 4 MEMORY_FILE
+            put SIZE long MEMORY_FILE
+            log MEMORY_FILE OFFSET SIZE
+            append
+            get SIZE asize MEMORY_FILE
+            string NAME += ".wav"
+            log NAME 0 SIZE MEMORY_FILE
+        else
+            log NAME OFFSET SIZE
+        endif
+
+        goto TMP_OFF
+    endif
+endfunction

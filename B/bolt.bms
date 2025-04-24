@@ -1,0 +1,31 @@
+# Nicktoons Movin' (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "BOLT"
+get DUMMY long
+get DUMMY short
+get SECTORS short
+get BOLT_SIZE long
+for x = 0 < SECTORS
+    get DUMMY short
+    get FILES short
+    get SIZE long
+    get OFFSET long
+    get ZERO long
+
+    if FILES == 0   # The Simpsons Skateboarding
+        math FILES = 0x100
+    endif
+
+    savepos TMP
+    goto OFFSET
+    for i = 0 < FILES
+        get DUMMY long
+        get SIZE long
+        get OFFSET long
+        get DUMMY long
+        string NAME p= "%d/*" x
+        log NAME OFFSET SIZE
+    next i
+    goto TMP
+next x

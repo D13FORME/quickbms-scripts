@@ -1,0 +1,14 @@
+# AWAD
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+idstring "AWAD"
+get FILES long
+for i = 0 < FILES
+	get NAME string
+	get DUMMY long
+	get SIZE long
+	get OFFSET long
+	get DUMMY long
+	log NAME OFFSET SIZE
+next i

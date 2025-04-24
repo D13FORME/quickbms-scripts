@@ -1,0 +1,49 @@
+# RaceRoom JCA files (script 0.1a)
+#
+#   IMPORTANT NOTE
+#   From 2014 the JCA files no longer contain file information, they are simply
+#   stored in the archive as raw files and so it's no longer possible to extract
+#   them. You need a file ripper to dump the recognized files.
+#
+#   you need to decrypt the file with wtcced first, using the -k raceroom option:
+#     http://aluigi.org/papers.htm#wtcced
+#   For using -k raceroom it's enough to create a link to wtcced.exe and appending
+#   -k raceroom to 
+# script for QuickBMS http://quickbms.aluigi.org
+
+get FILES long
+
+if FILES == 0xffffb10f
+    print "Error: the file is encrypted, use wtcced -k raceroom to decrypt it:\n       http://aluigi.org/papers.htm#wtcced\n"
+    cleanexit
+endif
+
+getdstring SIGN 4
+math NEW_VERSION = 1
+if SIGN != "CRID"
+if SIGN != "RIFF"
+if SIGN != "DDS "
+    math NEW_VERSION = 0
+endif
+endif
+endif
+
+if NEW_VERSION != 0
+    print "Error: the current version of the JCA files doesn't have an index table so all the files are stored in the archive without information, so if you want to extract the files (without names) you need to use a file ripper"
+    cleanexit
+endif
+
+for EXTRACT = 0 < 2
+    goto 4
+    for i = 0 < FILES
+        get NAMESZ long
+        getdstring NAME NAMESZ
+        get OFFSET long
+        get SIZE long
+        if EXTRACT != 0
+            math OFFSET += BASE_OFF
+            log NAME OFFSET SIZE
+        endif
+    next i
+    savepos BASE_OFF
+next EXTRACT

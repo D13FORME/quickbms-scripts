@@ -1,0 +1,22 @@
+# Trine 2 (script 0.2)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzf
+get DUMMY long
+get FILES long
+get BASE_OFF long
+math BASE_OFF += 0xc
+for i = 0 < FILES
+    get NAME string
+    get OFFSET long
+    get NOZIP byte
+    get SIZE long
+    get ZSIZE long
+    get CRC long
+    math OFFSET += BASE_OFF
+    if NOZIP == 0
+        clog NAME OFFSET ZSIZE SIZE
+    else
+        log NAME OFFSET SIZE
+    endif
+next i

@@ -1,0 +1,7 @@
+# CRC32
+# script for QuickBMS http://quickbms.aluigi.org
+
+get SIZE asize
+encryption crc ""
+log MEMORY_FILE 0 SIZE
+print "the CRC32 is %QUICKBMS_CRC%"

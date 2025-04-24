@@ -1,0 +1,44 @@
+# Red Faction: Guerrilla (untested)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "\xce\x0a\x89\x51"
+goto 0x154
+get FILES long
+get VPP_SIZE long
+get INFO_SIZE long
+get NAME_SIZE long
+get DUMMY long
+get DATA_SIZE long
+
+padding 0x800
+savepos OFFSET
+log MEMORY_FILE OFFSET INFO_SIZE
+math OFFSET += INFO_SIZE
+goto OFFSET
+padding 0x800
+savepos OFFSET
+log MEMORY_FILE2 OFFSET NAME_SIZE
+
+comtype zlib_noerror
+math OFFSET = VPP_SIZE
+math OFFSET -= DATA_SIZE
+for i = 0 < FILES
+    get NAME_OFF long MEMORY_FILE
+    get ZERO long MEMORY_FILE
+    get DUMMY long MEMORY_FILE
+    get CRC long MEMORY_FILE
+    get SIZE long MEMORY_FILE
+    get ZSIZE long MEMORY_FILE
+    get ZERO long MEMORY_FILE
+
+    goto NAME_OFF MEMORY_FILE2
+    get NAME string MEMORY_FILE2
+    if ZSIZE == 0xffffffff
+        log NAME OFFSET SIZE
+        math OFFSET += SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+        math OFFSET += ZSIZE
+    endif
+    math OFFSET x= 0x800
+next i

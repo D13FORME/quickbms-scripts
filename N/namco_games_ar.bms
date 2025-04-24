@@ -1,0 +1,51 @@
+# Namco games CDFILES.DAT / ARCHIVE.AR (script 0.1.1)
+#   very similar to nascar2011.bms
+#   Usually the extracted files are archives that must be extracted with this script:
+#   http://aluigi.org/papers/bms/others/nascar_2013_arcc_files.bms
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDSE "CDFILES.DAT" 0
+
+idstring "fil"
+get TYPE byte   # 'e' or 'P' and so on
+get BLAH long
+goto 4
+for i = 0 < BLAH
+    get DUMMY long
+    get DUMMY long
+next i
+get FILES long
+get DUMMY long
+get ALIGNSZ long
+get ENTRIES long
+findloc OFFSET string "ARCHIVE.AR" 0 ""
+if OFFSET == ""
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    if DUMMY != 0
+        get DUMMY long
+        get DUMMY string
+        padding 4
+    endif
+else
+    goto OFFSET
+endif
+get NAME string
+padding 4
+open FDSE NAME  1
+
+math TMP = FILES
+math TMP *= 4
+savepos OFFSET
+
+log MEMORY_FILE OFFSET TMP  # offsets
+math OFFSET += TMP
+log MEMORY_FILE2 OFFSET TMP # sizes
+
+for i = 0 < FILES
+    get OFFSET long MEMORY_FILE
+    math OFFSET *= ALIGNSZ
+    get SIZE long MEMORY_FILE2
+    log "" OFFSET SIZE 1
+next i

@@ -1,0 +1,59 @@
+# RIFF/RIFX file parser
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "RIF"
+get TYPE byte
+get SIZE long
+endian guess SIZE
+idstring "WAVE"
+get RIFF_SIZE asize
+savepos NEXT_OFF
+for NEXT_OFF = NEXT_OFF < RIFF_SIZE
+    getdstring CHUNK_TYPE 4
+    get CHUNK_SIZE long
+
+    savepos CHUNK_OFF
+    xmath NEXT_OFF "CHUNK_OFF + CHUNK_SIZE"
+
+    if CHUNK_TYPE == "fmt "
+        get wFormatTag short
+        get wChannels short
+        get dwSamplesPerSec long
+        get dwAvgBytesPerSec long
+        get wBlockAlign short
+        get wBitsPerSample short
+
+        savepos TMP
+        for TMP = TMP < NEXT_OFF
+            get DUMMY short
+        next TMP += 2
+
+    elif CHUNK_TYPE == "akd "
+        getdstring DUMMY 0x10
+
+        savepos TMP
+        for TMP = TMP < NEXT_OFF
+            get DUMMY short
+        next TMP += 2
+
+    elif CHUNK_TYPE == "data"
+        if wFormatTag == 1
+            savepos TMP
+            for TMP = TMP < NEXT_OFF
+                for c = 0 < wChannels
+                    if wBitsPerSample == 8
+                        get SAMPLE byte
+                    elif wBitsPerSample == 16
+                        get SAMPLE short
+                    elif wBitsPerSample == 32
+                        get SAMPLE long
+                    endif
+                next c
+                savepos TMP
+            next
+        endif
+
+    endif
+
+    goto NEXT_OFF
+next

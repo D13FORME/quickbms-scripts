@@ -1,0 +1,36 @@
+# POD5
+#   The Walking Dead Survival Instinct
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "POD5"
+goto 0x58
+get FILES long
+goto 0x108
+get OFFSET long
+
+math NAMES_OFF = FILES
+math NAMES_OFF *= 0x1c
+math NAMES_OFF += OFFSET
+
+goto OFFSET
+for i = 0 < FILES
+    get NAME_OFF long
+    get ZSIZE long
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+    get TSTAMP longlong
+
+    savepos TMP
+    math NAME_OFF += NAMES_OFF
+    goto NAME_OFF
+    get NAME string
+    goto TMP
+
+    if ZSIZE == SIZE
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i
+

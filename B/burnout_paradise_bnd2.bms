@@ -1,0 +1,50 @@
+# bnd2 (script 0.1.1)
+#   Burnout Paradise
+#   Need for Speed Most Wanted
+#   Need for Speed Hot Pursuit
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic   # for those files that are not compressed
+idstring "bnd2"
+get FULL_SIZE asize
+math TYPE = 0   # Burnout Paradise
+do
+    get DUMMY long
+while DUMMY != FULL_SIZE
+savepos TMP
+if TMP < 0x10
+    math TYPE = 1
+endif
+get FILES long
+get INFO_OFF long
+get OFFSET long
+math REMAINING = OFFSET
+math REMAINING -= INFO_OFF
+math REMAINING /= FILES
+for i = 0 < FILES
+    goto INFO_OFF
+    getdstring DUMMY 8
+    if TYPE == 0
+        getdstring DUMMY 8
+    endif
+    get SIZE long
+    getdstring DUMMY 8
+    if TYPE == 0
+        get DUMMY long
+        if DUMMY == 0
+            get ZSIZE long
+        else
+            math ZSIZE = DUMMY
+        endif
+    else
+        getdstring DUMMY 4
+        get ZSIZE long
+    endif
+    math INFO_OFF += REMAINING
+    math SIZE &= 0xffffff #???
+    clog "" OFFSET ZSIZE SIZE
+    math OFFSET += ZSIZE
+    if TYPE == 0
+        math OFFSET x= 0x10
+    endif
+next i

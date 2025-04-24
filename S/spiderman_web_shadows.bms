@@ -1,0 +1,37 @@
+# Spider Man Web Of Shadows
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "res\n"
+get DUMMY short
+get DUMMY short
+get ZERO long
+get DATA_OFF long
+get DATA_SIZE long
+get INFO_OFF long
+get ZERO long
+get OFFSET2 long
+math OFFSET2 += DATA_OFF
+get INFO_OFF long
+get DUMMY long
+get ZERO long
+get ZERO long
+get ZERO long
+get ENTRIES long
+for i = 0 < ENTRIES
+    getdstring NAME 4
+    get DUMMY long
+next i
+goto INFO_OFF
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    getdstring TYPE 4
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    math OFFSET += DATA_OFF
+    string NAME p= "%s/*" TYPE
+    log NAME OFFSET SIZE
+next i

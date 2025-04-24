@@ -1,0 +1,30 @@
+# Angelica File Package
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic
+goto -8
+get FILES long
+goto -276
+get INFO_OFF long
+math INFO_OFF ^= 0x33C3EDDB
+goto INFO_OFF
+for i = 0 < FILES
+    get HEAD long
+    math HEAD ^= 0x62A4F9E1
+    get FOOT long
+    math FOOT ^= 0x3520C3D5
+    savepos INFO_OFF
+    clog MEMORY_FILE INFO_OFF HEAD 0x118
+    math INFO_OFF += HEAD
+    goto INFO_OFF
+
+    getdstring NAME 260 MEMORY_FILE
+    get OFFSET longlong  MEMORY_FILE
+    get SIZE long MEMORY_FILE
+    get ZSIZE long MEMORY_FILE
+    if ZSIZE == SIZE
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

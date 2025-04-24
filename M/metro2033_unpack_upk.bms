@@ -1,0 +1,47 @@
+# Metro 2033 .upk unpacker v1.2
+# (only unpacker, not decrypter. hhrhhr@gmail.com 03-2010)
+# script for QuickBMS http://aluigi.org/papers.htm#quickbms
+
+# data section
+get num0 long
+get data_size long
+savepos pos
+math pos += data_size
+goto pos
+
+# filelist section
+get num1 long
+get list_size long
+savepos pos
+do
+	get current_xor byte
+	get tmp threebyte
+	get offset long
+	get size_unp long
+	get size_pak long
+	get strlen_filename long
+	math strlen_filename -= 1
+	filexor current_xor
+	getdstring name strlen_filename
+	filexor 0
+	#print "%offset% %size_unp% %size_pak% %strlen_filename% %name%"
+	log name offset size_pak
+	get tmp byte
+	savepos list_pos
+	math list_pos -= pos
+while list_pos < list_size
+
+# dummy section
+get num2 long
+get size long
+savepos pos
+math pos += size
+goto pos
+
+# guid section
+get num3 long
+get guid_size long
+savepos pos
+get upk_name FILENAME
+string upk_name += ".guid"
+log upk_name pos guid_size

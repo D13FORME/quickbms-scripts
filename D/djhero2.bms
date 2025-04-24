@@ -1,0 +1,32 @@
+# DJ Hero 2 X360 DISC0.IMG
+#   you must first merge the part* files together as described in this thread:
+#   http://forum.xentax.com/viewtopic.php?f=10&t=5336
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+idstring "FSG-FILE-SYSTEM\0"
+get DUMMY long  # 00000002
+get HEADER_SIZE long
+get DUMMY long  # 0000653d
+get DUMMY long  # 0000af58
+get BASE_OFF long
+get DUMMY long  # 00003e80
+get DUMMY long  # 00000008
+get FILES long
+get DUMMY long  # 00000000
+get DUMMY long  # 4c67d364
+for i = 0 < FILES
+    get DUMMY long
+    get DUMMY byte
+    get OFFSET threebyte
+    savepos TMP
+    goto OFFSET
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+    get DUMMY long
+    math OFFSET *= 1024
+    math OFFSET += BASE_OFF
+    log "" OFFSET SIZE
+    goto TMP
+next i

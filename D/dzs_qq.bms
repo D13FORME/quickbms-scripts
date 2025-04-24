@@ -1,0 +1,122 @@
+# http://dzs.qq.com/ (script 0.2)
+#   this script is 100% heuristic because there are many information encrypted and even corrupted
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic   # some files like 0x0168d21c of data.vfs are invalid
+idstring "vfs "
+get DUMMY long
+get ALIGN long
+get ZERO long
+get BASE_OFF longlong
+get OTHER_OFF longlong
+get INFO_OFF longlong   # encrypted
+get INFO_SIZE long
+get NAMES_OFF longlong
+get NAMES_SIZE long
+log MEMORY_FILE2 NAMES_OFF NAMES_SIZE
+
+# check if there are non-encrypted filenames
+    get NAMESZ short MEMORY_FILE2
+    getdstring NAME NAMESZ MEMORY_FILE2
+if NAME == \
+    math FILENAMES_ENCRYPTED = 0
+    goto 0 MEMORY_FILE
+    for i = 0
+        savepos TMP MEMORY_FILE2
+        if TMP >= NAMES_SIZE
+            break
+        endif
+        get NAMESZ short MEMORY_FILE2
+        getdstring NAME NAMESZ MEMORY_FILE2
+        if NAME & "."
+            putarray 0 i NAME
+            math i += 1
+        endif
+    next
+else
+    math FILENAMES_ENCRYPTED = 1
+endif
+
+math CHUNK_SIZE = 0x00400000
+
+math i = 0
+for OFFSET = BASE_OFF < INFO_OFF
+    goto OFFSET
+    savepos DATA_OFFSET
+    idstring "data"
+    get DUMMY long
+    get REF_OFF longlong
+
+    if FILENAMES_ENCRYPTED == 0
+        getarray NAME 0 i
+    else
+        set NAME string ""
+    endif
+
+    savepos TMP
+    math IS_ENCRYPTED = 0
+    for CHUNKS = 0
+        get SIGN short
+        if SIGN == 0x9c78
+            break
+        endif
+        get DUMMY short
+        xmath DUMMY "(DUMMY << 16) | SIGN"
+        if DUMMY u> CHUNK_SIZE
+            math IS_ENCRYPTED = 1
+            break
+        endif
+    next CHUNKS
+
+    if IS_ENCRYPTED == 0
+        goto TMP
+        if CHUNKS == 0
+            findloc NEXT_OFFSET string "data"
+            xmath CHUNK_ZSIZE "NEXT_OFFSET - OFFSET"
+            clog NAME OFFSET CHUNK_ZSIZE CHUNK_SIZE
+            math OFFSET = NEXT_OFFSET
+
+        elif CHUNKS == 1  # allow reimporting
+            get CHUNK_ZSIZE long
+            savepos OFFSET
+            clog NAME OFFSET CHUNK_ZSIZE CHUNK_SIZE
+            math OFFSET += CHUNK_ZSIZE
+
+        else
+            for x = 0 < CHUNKS
+                get CHUNK_ZSIZE long
+                putarray 1 x CHUNK_ZSIZE
+            next x
+            savepos OFFSET
+            log MEMORY_FILE 0 0
+            append
+            for x = 0 < CHUNKS
+                getarray CHUNK_ZSIZE 1 x
+                clog MEMORY_FILE OFFSET CHUNK_ZSIZE CHUNK_SIZE
+                math OFFSET += CHUNK_ZSIZE
+            next x
+            append
+            get SIZE asize MEMORY_FILE
+            log NAME 0 SIZE MEMORY_FILE
+        endif
+    
+        math OFFSET -= BASE_OFF
+        math OFFSET x= ALIGN
+        math OFFSET += BASE_OFF
+
+    else
+
+        findloc OFFSET string "data"
+
+    endif
+
+    # some files like data_base_4.vfs have invalid information
+    # for example:
+    # offset 0x76c800 chunks 0x55061 + 0x10a4
+    # next data is 0x76ca00 ?!?!?
+
+    goto DATA_OFFSET
+    idstring "data"
+    findloc OFFSET string "data"
+
+next i

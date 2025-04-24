@@ -1,0 +1,10 @@
+# PKWare Data Compression Library (aka explode)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype explode
+get ZSIZE asize
+set SIZE ZSIZE
+math SIZE *= 5
+get NAME filename
+string NAME += ".explode"
+clog NAME 0 ZSIZE SIZE

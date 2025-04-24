@@ -1,0 +1,24 @@
+# Anomaly Warzone Earth
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype deflate_noerror
+open FDDE "idx" 0
+open FDDE "dat" 1
+get DUMMY short
+get DUMMY byte
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    get CRC long
+    get ZSIZE long
+    get SIZE long
+    get OFFSET long
+    get ZIP byte
+    if ZIP == 0
+        log "" OFFSET SIZE 1
+    else
+        math OFFSET += 10
+        math ZSIZE -= 10
+        clog "" OFFSET ZSIZE SIZE 1
+    endif
+next i

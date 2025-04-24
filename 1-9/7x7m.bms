@@ -1,0 +1,49 @@
+# 7½7M archives (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+get SIGN long
+if SIGN != 0xbac04ac0
+    goto 0
+    filexor 0xf7            # classical 0xf7
+    get SIGN long
+    if SIGN != 0xbac04ac0
+        for i = 0xff > 0    # scan
+            goto 0
+            filexor i
+            get SIGN long
+            if SIGN == 0xbac04ac0
+                break
+            endif
+            math i -= 1
+        next
+        if i <= 0
+            print "not a 7½7M archive"
+            cleanexit
+        endif
+    endif
+endif
+
+goto 9
+savepos START
+do
+    get FNAMESZ byte
+    getdstring FNAME FNAMESZ
+    get SIZE long
+    get SKIP long
+    get SKIP long
+    get LASTFILE byte
+while LASTFILE != 0x80
+
+savepos OFFSET
+goto START
+do
+    get FNAMESZ byte
+    getdstring FNAME FNAMESZ
+    get SIZE long
+    get SKIP long
+    get SKIP long
+    get LASTFILE byte
+
+    log FNAME OFFSET SIZE
+    math OFFSET += SIZE
+while LASTFILE != 0x80

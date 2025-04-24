@@ -1,0 +1,26 @@
+# http://aluigi.freeforums.org/rfi-rfp-files-t1727.html
+
+open FDDE "RFI"
+comtype unzip_dynamic
+get SIZE asize
+clog MEMORY_FILE 0 SIZE SIZE
+open FDDE "RFP"
+
+comtype zlib
+get FILES long MEMORY_FILE
+for i = 0 < FILES
+    get NAMESZ long MEMORY_FILE
+    math NAMESZ *= 2
+    getdstring NAME NAMESZ MEMORY_FILE
+    set NAME unicode NAME
+    get SIZE long MEMORY_FILE
+    get OFFSET long MEMORY_FILE
+
+    math TMP = OFFSET
+    math TMP += SIZE
+    math TMP -= 0x18
+    goto TMP
+    get ZSIZE long
+    get SIZE long
+    clog NAME OFFSET ZSIZE SIZE
+next i

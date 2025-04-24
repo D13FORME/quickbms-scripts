@@ -1,0 +1,27 @@
+idstring FPAK
+get MPAK_SIZE long
+get DUMMY long
+get FILES long
+for i = 0 < FILES
+    getdstring NAME 0x20
+    get DUMMY long
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+
+    savepos TMP # add an extension... maybe useful
+    goto OFFSET
+    getdstring SIGN 4
+    goto TMP
+    if SIGN == "RIFF"
+        string NAME += ".wav"
+    elif SIGN == "FPAK"
+        string NAME += ".mpak"
+    elif SIGN == "ptex"
+        string NAME += ".ptex"
+    elif SIGN == "‰PNG"
+        string NAME += ".png"
+    endif
+
+    log NAME OFFSET SIZE
+next i

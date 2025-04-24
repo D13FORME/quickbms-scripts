@@ -1,0 +1,22 @@
+# Dissidia
+# script for QuickBMS http://quickbms.aluigi.org
+
+math BASE_OFF = 0x800
+goto BASE_OFF
+idstring "MPK "
+get DUMMY long
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    get NAME_OFF long
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+    savepos TMP
+    math NAME_OFF += BASE_OFF
+    math OFFSET += BASE_OFF
+    goto NAME_OFF
+    get NAME string
+    goto TMP
+    log NAME OFFSET SIZE
+next i

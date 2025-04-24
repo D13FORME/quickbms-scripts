@@ -1,0 +1,248 @@
+# Frostbite engine archives TOC/SB (script 0.2.3)
+#   Battlefield 3
+#   Need for Speed: The Run
+#   Need for Speed: Rivals
+#   Dragon Age
+#
+# Original script written by Axsis, great job!
+#   http://forum.xentax.com/viewtopic.php?p=63944#p63944
+# I have added support for other object types and some
+# enhancements and fixes
+#
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver "0.6"
+
+Open FDDE "TOC"
+idstring "\x00\xd1\xce"
+get VER byte
+Get TOC_SIZE asize
+Math TOC_SIZE -= 0x22C
+CallFunction DecryptTOC
+
+Open FDDE "SB"
+get SB_SIZE asize
+CallFunction TOCParser
+
+StartFunction DecryptTOC
+    goto 0x128
+    if VER < 3 # NFS Rivals is not encrypted
+        FileXOR 0x7B
+    endif
+    getdstring KEY 0x101
+    FileXOR ""
+    encryption xor KEY "" 0 0x101
+    Log MEMORY_FILE 0x22C TOC_SIZE
+    encryption "" ""
+EndFunction
+
+StartFunction TOCParser
+    Math FFLAG = 0
+    for
+        savepos CURR_OFF MEMORY_FILE
+        if CURR_OFF >= TOC_SIZE
+            cleanexit
+        endif
+
+        Get TYPECODE byte MEMORY_FILE
+        Math FLAGS = TYPECODE
+        Math FLAGS >> 5
+        Math TYPECODE & 0x1F
+
+        If FLAGS & 4    # & 0x80 means a "" string
+            Set KEY string ""
+        elif TYPECODE == 0
+            Set KEY string ""
+        Else
+            Get KEY string MEMORY_FILE
+        EndIf
+
+            # bf3.exe 00449F3D and 00464EE0
+
+        If TYPECODE == 0        # Eoo
+            #Print "End of current LIST or ENTRY"
+            break
+
+        elif TYPECODE == 1      # Array - List
+            get VALUE variable4 MEMORY_FILE
+            #Print "Start of LIST '%KEY%' with size = %VALUE%"
+            CallFunction TOCParser
+
+        elif TYPECODE == 2      # Dbobject - Entry
+            get VALUE variable4 MEMORY_FILE
+            #Print "Start of ENTRY '%KEY%' with size = %VALUE%"
+            CallFunction TOCParser
+
+        #elif TYPECODE == 3     # HomoArray
+
+        #elif TYPECODE == 4     # Null
+
+        #elif TYPECODE == 5     # Objectid
+
+        elif TYPECODE == 6      # Bool
+            Get VALUE byte MEMORY_FILE
+
+        elif TYPECODE == 7      # String
+            Get VALUESZ byte MEMORY_FILE
+            GetDString VALUE VALUESZ MEMORY_FILE
+
+        elif TYPECODE == 8      # int
+            Get VALUE long MEMORY_FILE
+
+        elif TYPECODE == 9      # Long
+            Get VALUE longlong MEMORY_FILE
+
+        elif TYPECODE == 10     # Varint
+            get VALUE variable4 MEMORY_FILE
+
+        elif TYPECODE == 11     # Float
+            get VALUE float MEMORY_FILE
+
+        elif TYPECODE == 12     # Double
+            get VALUE double MEMORY_FILE
+
+        elif TYPECODE == 13     # Timestamp
+            get VALUE time64 MEMORY_FILE
+
+        #elif TYPECODE == 14    # RecordId
+
+        elif TYPECODE == 15     # Guid
+            math VALUESZ = 16
+            callfunction get_hex 1
+
+        elif TYPECODE == 16     # sha1
+            math VALUESZ = 20
+            callfunction get_hex 1
+
+        #elif TYPECODE == 17    # Matrix44
+
+        #elif TYPECODE == 18    # Vector4
+
+        #elif TYPECODE == 19    # Blob
+
+        elif TYPECODE == 20     # Attachment
+            get VALUESZ variable4 MEMORY_FILE
+            getdstring VALUE VALUESZ MEMORY_FILE    # base64
+
+        #elif TYPECODE == 21    # Timespan
+
+        #elif TYPECODE == 31    # InternalMax
+
+        Else
+            Print "Unknown TYPECODE %TYPECODE% for key %KEY% at offset %CURR_OFF|x%, contact me"
+            CleanExit
+        EndIf
+
+        If KEY == "id"
+            Set FNAME string VALUE
+            Math FFLAG | 1
+
+        elif KEY == "offset"
+            Math FOFFSET = VALUE
+            Math FFLAG | 2
+
+        elif KEY == "size"
+            Math FSIZE = VALUE
+            Math FFLAG | 4
+        EndIf
+
+        If FFLAG >= 7
+            math TMP = FOFFSET
+            math TMP += FSIZE
+            if TMP <= SB_SIZE
+                callfunction DUMP 1
+            else
+                print "offset > archive:   %FNAME%"
+            endif
+            Math FFLAG = 0
+        EndIf
+
+    next
+EndFunction
+
+startfunction get_hex
+    set VALUE string ""
+    for x = 0 < VALUESZ
+        get B byte MEMORY_FILE
+        string B p= "%02x" B
+        string VALUE += B
+    next x
+endfunction
+
+startfunction DUMP
+    math DUMPED = 0
+    if FSIZE >= 8
+        goto FOFFSET
+        get DUMMY long
+        get DUMMY long
+        if DUMMY == 0xd58e799d
+            endian save CURRENT_ENDIAN
+            endian big
+            Log MEMORY_FILE3 FOFFSET FSIZE  # useful for padding
+            get DUMMY long MEMORY_FILE3
+            get DUMMY long MEMORY_FILE3
+            get SUB_FILES long MEMORY_FILE3
+            get SUB_NAMES long MEMORY_FILE3
+            if SUB_NAMES == 0
+                math SUB_NAMES = SUB_FILES
+            endif
+            get SUB_FILES2 long MEMORY_FILE3
+            get SUB_SKIP long MEMORY_FILE3
+            get CHUNK_OFF long MEMORY_FILE3
+            getdstring ZERO 8 MEMORY_FILE3
+            for x = 0 < SUB_FILES
+                getdstring HASH 20 MEMORY_FILE3
+            next x
+
+            math SUB_FILES -= SUB_SKIP
+            for x = 0 < SUB_FILES
+                get DUMMY long MEMORY_FILE3
+                get FILE_SIZE long MEMORY_FILE3
+                putarray 1 x FILE_SIZE
+            next x
+            math CHUNK_OFF += 4
+            goto CHUNK_OFF MEMORY_FILE3
+            for x = 0 < SUB_FILES
+                if x < SUB_NAMES
+                    get NAME string MEMORY_FILE3
+                else
+                    set NAME string ""
+                endif
+                putarray 0 x NAME
+            next x
+            padding 0x10 MEMORY_FILE3
+
+            for x = 0 < SUB_FILES
+                getarray FNAME 0 x
+                getarray FILE_SIZE 1 x
+                putvarchr MEMORY_FILE2 FILE_SIZE 0
+                log MEMORY_FILE2 0 0
+                append
+                for MYSIZE = 0 < FILE_SIZE
+                    get CHUNK_SIZE long MEMORY_FILE3
+                    get FLAGS short MEMORY_FILE3
+                    get CHUNK_ZSIZE short MEMORY_FILE3
+                    savepos CHUNK_OFF MEMORY_FILE3
+                    if FLAGS & 0x200
+                        clog MEMORY_FILE2 CHUNK_OFF CHUNK_ZSIZE CHUNK_SIZE MEMORY_FILE3
+                    else
+                        log MEMORY_FILE2 CHUNK_OFF CHUNK_SIZE MEMORY_FILE3
+                    endif
+                    math CHUNK_OFF += CHUNK_ZSIZE
+                    goto CHUNK_OFF MEMORY_FILE3
+                    math MYSIZE += CHUNK_SIZE
+                next
+                append
+                log FNAME 0 FILE_SIZE MEMORY_FILE2
+            next x
+
+            if CURRENT_ENDIAN == 0
+                endian little
+            endif
+            math DUMPED = 1
+        endif
+    endif
+    if DUMPED == 0
+        Log FNAME FOFFSET FSIZE
+    endif
+endfunction

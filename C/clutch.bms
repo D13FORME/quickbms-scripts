@@ -1,0 +1,117 @@
+# Armageddon Riders Clutch, Insane 2 and possibly other Targem games (script 0.2.1a)
+#   http://ru.wikipedia.org/wiki/Targem_Games
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic
+getdstring SIGN 4
+if SIGN == "KAPT"
+    math TYPE = 0
+elif SIGN == "TPAK"
+    math TYPE = 1
+else
+    print "invalid signature (%SIGN%)"
+    cleanexit
+endif
+get VERSION short
+get DUMMY short
+if TYPE != 0
+    get DUMMY long
+endif
+get FILES long
+
+if VERSION >= 4
+    get DUMMY long
+endif
+
+get NAMETABLESZ long
+get NAMETABLESZZ long
+if TYPE == 0
+    get DUMMY long
+endif
+savepos OFFSET
+log MEMORY_FILE OFFSET NAMETABLESZZ
+putvarchr MEMORY_FILE 0 0x78
+putvarchr MEMORY_FILE 1 0x9c
+clog MEMORY_FILE2 0 NAMETABLESZZ NAMETABLESZ MEMORY_FILE
+
+math OFFSET += NAMETABLESZZ
+if TYPE != 0
+    math OFFSET x= 4
+endif
+goto OFFSET
+
+if TYPE != 0
+    for i = 0 < FILES
+        get DUMMY long
+    next i
+    get TMP long
+    for i = 0 < TMP
+        get DUMMY long
+    next i
+endif
+
+get FILETABLESZ long
+get FILETABLESZZ long
+savepos OFFSET
+log MEMORY_FILE OFFSET FILETABLESZZ
+putvarchr MEMORY_FILE 0 0x78
+putvarchr MEMORY_FILE 1 0x9c
+clog MEMORY_FILE3 0 FILETABLESZZ FILETABLESZ MEMORY_FILE
+
+math OFFSET += FILETABLESZZ
+if TYPE != 0
+    math OFFSET x= 4
+endif
+goto OFFSET
+savepos BASE_OFFSET
+
+comtype zlib
+for i = 0 < FILES
+    get SIZE long MEMORY_FILE3
+    get ZSIZE long MEMORY_FILE3
+    if TYPE == 0
+        get OFFSET long MEMORY_FILE3
+        get NAMEOFF long MEMORY_FILE3
+        get NAMESZ long MEMORY_FILE3
+        get ZIP long MEMORY_FILE3
+    else
+        get ZIP long MEMORY_FILE3
+        get OFFSET long MEMORY_FILE3
+        get NAMEOFF long MEMORY_FILE3
+        math NAMEOFF -= 4
+        if ZIP != 0xffffffff
+        if SIZE == ZSIZE
+            math ZIP = 0
+        endif
+        endif
+    endif
+    getdstring TIMESTAMP 8 MEMORY_FILE3
+
+    goto NAMEOFF MEMORY_FILE2
+    if TYPE != 0
+        get NAMESZ long MEMORY_FILE2
+    endif
+    getdstring NAME NAMESZ MEMORY_FILE2
+
+    math OFFSET += BASE_OFFSET
+
+    math CL == NAMESZ
+    math DL == NAMESZ
+    math DL %= 5
+    math DL += i
+    for j = 0 < NAMESZ
+        getvarchr BYTE NAME j
+        math BL == j
+        math BL += CL
+        math BL += BL
+        math BL += DL
+        math BYTE ^= BL
+        putvarchr NAME j BYTE
+    next j
+
+    if ZIP == 0
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

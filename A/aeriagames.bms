@@ -1,0 +1,40 @@
+# Aeriagames pkg.idx/pkg???.pkg (script 0.1.2)
+#   Eden Eternal
+#   Kitsu Saga
+#   Dragon Slayer
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic
+getdstring DUMMY 260
+getdstring SIGN 32
+math PKG_OLD = -1
+get FULLSIZE asize
+do
+    get DUMMY long
+    get OFFSET long
+    get DUMMY long
+    get ZSIZE long
+    getdstring DUMMY 0x28
+    get SIZE long
+    getdstring NAME2 260
+    getdstring NAME 260
+    get DUMMY long
+    get PKG long
+    get DUMMY long
+    if PKG != PKG_OLD
+        string PKG_NAME p= "pkg%03d.pkg" PKG
+        open FDSE PKG_NAME 1
+        math PKG_OLD = PKG
+    endif
+    string NAME += NAME2
+
+    goto OFFSET 1
+    get TMP1 byte 1
+    get TMP2 byte 1
+    if TMP1 == 0x88 && TMP2 == 0x1c
+        savepos OFFSET 1
+        math ZSIZE -= 2
+    endif
+    clog NAME OFFSET ZSIZE SIZE 1
+    savepos CURR
+while CURR < FULLSIZE

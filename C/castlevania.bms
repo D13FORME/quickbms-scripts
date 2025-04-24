@@ -1,0 +1,22 @@
+# Castlevania: Lords of Shadow
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "BFPK"
+get ZIP long
+get FILES long
+for i = 0 < FILES
+    get NAMESZ long
+    getdstring NAME NAMESZ
+    get SIZE long
+    get OFFSET long
+    if ZIP == 0
+        log NAME OFFSET SIZE
+    else
+        savepos TMP
+        goto OFFSET
+        get ZSIZE long
+        savepos OFFSET
+        goto TMP
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

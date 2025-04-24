@@ -1,0 +1,162 @@
+# Asura engine (script 0.2.5)
+#  Sniper Elite 1/2/3
+#  Rogue Trooper
+#  Guard Shield
+#  NeverDead
+#  possibly other Rebellion's games
+#   thanx to Terry Butler for having solved the mistery of the filenames in ASTS
+# script for QuickBMS http://quickbms.aluigi.org
+
+get PACK_SIZE asize
+
+# doesn't work correctly
+#goto 0x10
+#get DUMMY short
+#if DUMMY == 0
+#    endian big
+#endif
+
+# should work most of the times
+# in case of problems you must specify the endianess manually, example
+#   endian big
+
+goto 0x08
+savepos OFFSET
+get CHUNK long
+get CHUNKSZ long
+math OFFSET += CHUNKSZ
+if OFFSET u> PACK_SIZE
+    endian big
+# don't add other checks or you must add also AsuraCmp/Zlb
+endif
+goto 0
+
+getdstring SIGN 8
+if SIGN == "AsuraCmp"
+    get ZSIZE long
+    if ZSIZE u> PACK_SIZE
+        endian big
+        reverselong ZSIZE ZSIZE
+    endif
+    get SIZE long
+    math ZSIZE = PACK_SIZE
+    math OFFSET = 8
+    math ZSIZE -= OFFSET
+    comtype huffboh
+    callfunction UNPACK_TO_TEMPFILE 1
+elif SIGN == "AsuraZlb"
+    get ZERO long
+    get ZSIZE long
+    if ZSIZE u> PACK_SIZE
+        endian big
+        reverselong ZSIZE ZSIZE
+    endif
+    get SIZE long
+    savepos OFFSET
+    math ZSIZE = PACK_SIZE
+    math ZSIZE -= OFFSET
+    comtype zlib
+    callfunction UNPACK_TO_TEMPFILE 1
+endif
+
+if SIGN != "Asura   "
+    set XCOMPRESS_SIGN1 binary "\x0f\xf5\x12\xed"
+    set XCOMPRESS_SIGN2 binary "\x0f\xf5\x12\xee"
+    goto 0
+    getdstring SIGN 4
+    if SIGN == XCOMPRESS_SIGN1
+        endian big
+        print "Error: use xbdecompress.exe to decompress this archive and then use this script"
+        cleanexit
+    elif SIGN == XCOMPRESS_SIGN2
+        endian big
+        goto 0x1c
+        get ZSIZE asize
+        get SIZE long
+        comtype xmemdecompress
+        math OFFSET = 0
+        callfunction UNPACK_TO_TEMPFILE 1
+    else
+        print "Error: unknown type of file %SIGN%"
+        cleanexit
+    endif
+endif
+
+for x = 0
+    savepos CHUNK_OFFSET
+    math TMP = CHUNK_OFFSET
+    math TMP += 16
+    if TMP >= PACK_SIZE
+        cleanexit
+    endif
+    get CHUNK long
+    string CHUNK = CHUNK
+    get CHUNKSZ long
+    get CHUNK_VER long  # ???
+    get DUMMY long
+    if CHUNK == "RSCF"
+        get TYPE long
+        get DUMMY long
+        get SIZE long
+        get NAME string
+        math OFFSET = CHUNK_OFFSET
+        math OFFSET += CHUNKSZ
+        math OFFSET -= SIZE
+        log NAME OFFSET SIZE
+    elif CHUNK == "ASTS"
+        get FILES long
+
+        # Sniper Elite 3
+        if CHUNK_VER >= 2
+            savepos TMP
+            get NOT_ARCHIVED byte    # 0 or 1, 1 probably means that the files are not in the archive
+            if NOT_ARCHIVED != 0
+            if NOT_ARCHIVED != 1
+                math NOT_ARCHIVED = 0   # in this case it's part of the name, it's risky with names <= 3 chars
+                goto TMP
+            endif
+            endif
+        endif
+
+        for i = 0 < FILES
+            callfunction padded_name 1
+            get DUMMY byte
+            get SIZE long
+            get OFFSET long
+            if NOT_ARCHIVED == 0
+                log NAME OFFSET SIZE
+            endif
+        next i
+    else
+        savepos OFFSET
+        math SIZE = CHUNK_OFFSET
+        math SIZE += CHUNKSZ
+        math SIZE -= OFFSET
+        set NAME string CHUNK
+        string NAME += "_chunk/"
+        string NAME += x
+        string NAME += ".dat"
+        log NAME OFFSET SIZE    # comment here if you don't want to extract these useless chunks
+    endif
+    math CHUNK_OFFSET += CHUNKSZ
+    goto CHUNK_OFFSET
+next x
+
+startfunction padded_name
+    set NAME string ""
+    set NAME_POS long 0
+    do
+        get DUMMY long
+        string NAME += "PADD"
+        putvarchr NAME NAME_POS DUMMY long
+        math NAME_POS += 4
+        strlen NAMESZ NAME
+    while NAMESZ >= NAME_POS
+endfunction
+
+startfunction UNPACK_TO_TEMPFILE
+    clog TEMPORARY_FILE OFFSET ZSIZE SIZE
+    open "." TEMPORARY_FILE
+    get PACK_SIZE asize
+    getdstring SIGN 8
+endfunction

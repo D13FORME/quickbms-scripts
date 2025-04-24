@@ -1,0 +1,52 @@
+# Submarine Titans
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE "DKX"
+open FDDE "DKD" 1
+math NEXT_OFF = 0x20
+callfunction EXTRACT
+
+startfunction EXTRACT
+    savepos CURR_OFF
+    goto NEXT_OFF
+    get PREV_OFF long
+    get NEXT_XOFF long
+    get XSIZE short
+    get XTYPE short
+    get DUMMY long
+    savepos TMPL
+    math TMPL += XSIZE
+    savepos TMP
+    for TMP = TMP < TMPL
+        get NEXT_OFF long
+        get OFFSET long
+        get TYPE byte
+        get SIZE long
+        get ZIP byte
+        get ZSIZE long
+        get DUMMY long
+        get DATE longlong
+        get NAMESZ short
+        getdstring NAME NAMESZ
+        savepos TMP
+
+        if ZIP == 0
+            log NAME OFFSET SIZE 1
+        else
+            clog NAME OFFSET ZSIZE SIZE 1
+        endif
+
+        if OFFSET != 0xffffffff
+        if NEXT_OFF != 0xffffffff
+        if CURR_OFF != NEXT_OFF
+            callfunction EXTRACT
+        endif
+        endif
+        endif
+    next
+    math NEXT_OFF = NEXT_XOFF
+    if NEXT_OFF != 0xffffffff
+            callfunction EXTRACT
+    endif
+    goto CURR_OFF
+endfunction

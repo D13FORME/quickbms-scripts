@@ -1,0 +1,25 @@
+# Lunia (CBF archives)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzma
+get LAST_OFFSET long
+savepos OLD_OFFSET
+goto LAST_OFFSET
+get DUMMY long
+get DUMMY long
+callfunction DUMP 1
+
+goto OLD_OFFSET
+for OFFSET = 0 < LAST_OFFSET
+    callfunction DUMP 1
+    math OFFSET += ZSIZE
+    goto OFFSET
+next
+
+startfunction DUMP
+    get ZSIZE long
+    get SIZE long
+    math ZSIZE += 5
+    savepos OFFSET
+    clog "" OFFSET ZSIZE SIZE
+endfunction

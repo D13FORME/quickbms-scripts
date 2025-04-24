@@ -1,0 +1,17 @@
+# SFGP signature (*.pack) (Alawar) (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "SF"
+getdstring DUMMY 2
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    get NAMESZ short
+    get DUMMY short
+    get DUMMY long
+    getdstring NAME 0x70
+    putvarchr NAME NAMESZ 0
+    get SIZE long
+    get OFFSET long
+    log NAME OFFSET SIZE
+next i

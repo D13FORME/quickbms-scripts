@@ -1,0 +1,24 @@
+# NBA Jam on Fire
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "BGFA"
+getdstring VER 4
+get DUMMY long
+get FILES long
+get OFFSET long
+goto OFFSET
+getdstring DUMMY 12
+for i = 0 < FILES
+    getdstring DUMMY 10
+    get OFFSET long
+    get ZSIZE threebyte
+    get SIZE threebyte
+    getdstring NAME 0x2a
+    math OFFSET *= 8
+    if SIZE == 0
+        log NAME OFFSET ZSIZE
+    else
+        math SIZE += ZSIZE
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

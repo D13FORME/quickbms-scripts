@@ -1,0 +1,13 @@
+# Cargo!
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "LP3C"
+get DUMMY long
+get FILES long
+for i = 0 < FILES
+    get NAMESZ byte
+    getdstring NAME NAMESZ
+    get OFFSET longlong
+    get SIZE long
+    log NAME OFFSET SIZE
+next i

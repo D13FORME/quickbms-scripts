@@ -1,0 +1,55 @@
+# Wargame European Escalation EDAT
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "edat"
+get VERSION long
+getdstring HASH 16
+get DUMMY byte
+get INFO_OFF long
+get INFO_SIZE long
+get BASE_OFF long
+get DATA_SIZE long
+log MEMORY_FILE INFO_OFF INFO_SIZE
+
+set PATH string ""
+set NAME string ""
+math ENTRY_OFF = 0
+math NEXT_ELEMENT = 0
+callfunction EXTRACT
+
+startfunction EXTRACT
+    string PATH += NAME
+    if NEXT_ELEMENT == 0
+        math ENTRY_LIMIT = INFO_SIZE
+    else
+        xmath ENTRY_LIMIT "ENTRY_OFF + NEXT_ELEMENT"
+    endif
+    savepos ENTRY_OFF MEMORY_FILE
+    for ENTRY_OFF = ENTRY_OFF < ENTRY_LIMIT
+        get NEXT_SUB_ELEMENT long MEMORY_FILE
+        get NEXT_ELEMENT long MEMORY_FILE
+        if NEXT_SUB_ELEMENT != 0
+            get NAME string MEMORY_FILE
+            xmath TMP "ENTRY_OFF + NEXT_SUB_ELEMENT"
+            goto TMP MEMORY_FILE
+            callfunction EXTRACT
+        else
+            get OFFSET long MEMORY_FILE
+            get SIZE long MEMORY_FILE
+            get DUMMY byte MEMORY_FILE
+            get NAME string MEMORY_FILE
+
+            set FNAME string PATH
+            string FNAME += NAME
+            math OFFSET += BASE_OFF
+            log FNAME OFFSET SIZE
+        endif
+        if NEXT_ELEMENT != 0
+            math ENTRY_OFF += NEXT_ELEMENT
+            goto ENTRY_OFF MEMORY_FILE
+        else
+            padding 2 MEMORY_FILE
+            math ENTRY_OFF = ENTRY_LIMIT    # break
+        endif
+    next
+endfunction

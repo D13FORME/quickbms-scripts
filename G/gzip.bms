@@ -1,0 +1,9 @@
+# gzip files
+# script for QuickBMS http://quickbms.aluigi.org
+
+get NAME filename
+string NAME -= ".gz"
+get SIZE asize
+
+comtype gzip
+clog NAME 0 SIZE SIZE

@@ -1,0 +1,39 @@
+# Sleeping Dogs
+#   work-in-progress script, refer to:
+#   http://forum.xentax.com/viewtopic.php?f=10&t=9481
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE "BIG" 1
+
+    ubyte magic1[4]        // A8 40 5C 2C
+    int filesize1
+    int filesize2
+    int reserved1[4]
+    uint checksum           // <format=hex>
+    int reserved2[2]
+    ubyte magic2[4]        // F9 84 E7 2A
+    char archive_name[36]
+    int unk1[2]            // 2x -1
+    int numFiles
+    int magic3              // always 0x34
+    math magic3 -= 4
+    byte junk[magic3]
+
+for i = 0 < numFiles
+    uint hash               // <format=hex>
+    int Offset             // Offset *= 4
+    int SizeEmpty:12       // Offset += SizeEmpty
+    int unk1:20            // ???
+    int CSize              // Compressed Size, if 0 use USize
+    int unk2               // ???
+    int USize              // Uncompressed Size, if 0 it's a dummy file
+
+    math Offset *= 4
+    math Offset += SizeEmpty
+    if CSize == 0
+        log "" Offset USize 1
+    else
+        #clog "" Offset CSize USize 1
+        log "" Offset CSize 1
+    endif
+next i

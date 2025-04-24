@@ -1,0 +1,133 @@
+# Unity Engine assets extractor
+#
+#   It supports the following versions and probably others:
+#     6 used in Unity ??? (probably 2.x)
+#     8 used in Unity 3.x
+#     9 used in Unity 4.x
+#
+#   Press 'r' when QuickBMS will ask you to overwrite existent files!
+#   That's necessary because some resources have the same name
+#
+#   The script will extract the resources in folders having the file type as name
+#   so it's more easy to edit and identify the files of the same type
+#
+# script for QuickBMS http://quickbms.aluigi.org
+
+math GUESS_NAMES = 1    # set to 0 to avoid possible rare problems
+                        # or if you are sure that there are no names
+
+quickbmsver "0.5.32"
+
+# from my tests:
+# - all the mainData are nameless
+# - only some *.assets are nameless
+# I have not found a point where it's written if a resource is nameless or not
+get FULL_NAME filename
+if FULL_NAME == "mainData"
+    math GUESS_NAMES = 0
+endif
+
+get EXT extension
+if EXT == "unity3d"
+    print "Error: you must use the unity3d_webplayer.bms script for this archive"
+    cleanexit
+endif
+
+endian big
+get HEADER_SIZE long
+get FULL_SIZE long
+get VERSION long
+get BASE_OFF long
+
+if VERSION <= 8
+    xmath OFFSET "FULL_SIZE - HEADER_SIZE"
+    goto OFFSET
+    get DUMMY byte
+else
+    # version 9 tested
+    get ZERO long
+endif
+
+endian little
+if VERSION >= 8
+    get VERSION_STRING string
+    print "%VERSION_STRING%"
+    get DUMMY long
+endif
+get BASES long
+for BASE = 0 < BASES
+    get DUMMY long
+    math SUB_ELEMENTS = 1
+    callfunction PARSE_TYPES
+next BASE
+
+if VERSION >= 8
+    get ZERO long
+endif
+get FILES long
+
+for i = 0 < FILES
+    get INDEX long
+    get OFFSET long
+    get SIZE long
+    get TYPE long
+    get XTYPE long  # same as TYPE
+    savepos TMP_OFF
+    xmath OFFSET_TMP "OFFSET + BASE_OFF"
+    goto OFFSET_TMP
+    
+    math GET_FILENAMES = 0
+    if GUESS_NAMES != 0
+        get NAMESZ long
+        if NAMESZ u< 128
+            getdstring NAME NAMESZ
+            strlen TMP NAME
+            if TMP == NAMESZ
+                math GET_FILENAMES = 1
+            endif
+        endif
+        goto OFFSET_TMP
+    endif
+    
+    set NAME string ""
+    if GET_FILENAMES != 0
+        get NAMESZ long
+        getdstring NAME NAMESZ
+        padding 4
+    endif
+    savepos OFFSET
+    goto TMP_OFF
+    
+    xmath TMP "SIZE - (OFFSET - OFFSET_TMP)"
+    if TMP < 0
+        math OFFSET = OFFSET_TMP
+    else
+        math SIZE = TMP
+    endif
+    
+    getvarchr TMP NAME 0
+    if TMP <= 0x20
+        set NAME string ""
+    endif
+    
+    string FNAME p= "TYPE_%d/%s" TYPE NAME
+    
+    log FNAME OFFSET SIZE
+next i
+
+startfunction PARSE_TYPES
+    math ELEMENTS = SUB_ELEMENTS
+    for ELEMENT = 0 < ELEMENTS
+        get TYPE string
+        get NAME string
+        get SIZE long
+        get INDEX long
+        get ZERO long
+        get DUMMY long
+        get DUMMY long
+        get SUB_ELEMENTS long
+        if SUB_ELEMENTS != 0
+            callfunction PARSE_TYPES
+        endif
+    next ELEMENT
+endfunction

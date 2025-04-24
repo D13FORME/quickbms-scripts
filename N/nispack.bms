@@ -1,0 +1,13 @@
+# PSP La Pucelle: Ragnaraok (DAT)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "NISPACK\0"
+get DUMMY long
+get FILES long
+for i = 0 < FILES
+    getdstring NAME 0x20
+    get OFFSET long
+    get SIZE long
+    get CRC long
+    log NAME OFFSET SIZE
+next i

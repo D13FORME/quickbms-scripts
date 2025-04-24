@@ -1,0 +1,25 @@
+idstring "NTRO"
+get ARCHIVE_SIZE long
+goto 0x20
+get INFO_OFF long
+goto 0x2c
+get BASE_OFF long
+goto 0x34
+get NAMES_SIZE long
+get NAMES_OFF long
+get FILES long
+goto NAMES_OFF
+for i = 0 < FILES
+    getdstring NAME 0x80
+    putarray 0 i NAME
+next i
+goto INFO_OFF
+for i = 0 < FILES
+    get DUMMY longlong
+    get OFFSET long
+    get SIZE long
+    get ZERO long
+    math OFFSET += BASE_OFF
+    getarray NAME 0 i
+    log NAME OFFSET SIZE
+next i

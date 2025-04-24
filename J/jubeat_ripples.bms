@@ -1,0 +1,24 @@
+# Jubeat Ripples
+#   select packinfo.bin, NOT the pak files
+# script for QuickBMS http://quickbms.aluigi.org
+
+print "remember to select packinfo.bin only!"
+open FDSE "packinfo.bin"
+get DUMMY long
+get DUMMY long
+get FILES long
+math FILES /= 0x20
+get DUMMY long
+for i = 0 < FILES
+    getdstring HASH 0x10
+    get NAME_CRC long
+    get DUMMY short
+    get PACK short
+    get OFFSET long
+    get SIZE long
+    math TMP = PACK
+    math TMP /= 30
+    string PACK_NAME p= "d%03d/pack%04d.pak" TMP PACK
+    open FDSE PACK_NAME 1
+    log "" OFFSET SIZE 1
+next i

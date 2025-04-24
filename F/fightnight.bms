@@ -1,0 +1,117 @@
+# Fight Night Champion / SSX Xbox 360 (*.big) (script 0.3)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype xmemdecompress
+endian big
+idstring "EB"
+get DUMMY short
+get FILES long
+get DUMMY long
+get NAME_OFF long
+get NAME_SIZE long
+get XNAMESZ byte
+get XFOLDERSZ byte
+get FOLDERS short
+
+log MEMORY_FILE NAME_OFF NAME_SIZE
+#math NAMESZ = NAME_SIZE
+#math NAMESZ /= FILES
+math NAMESZ = XNAMESZ
+math FOLDER_OFF = FILES
+math FOLDER_OFF *= NAMESZ
+math FOLDER_OFF += NAME_OFF
+math FOLDER_OFF x= 0x10
+math FOLDER_SIZE = NAME_OFF
+math FOLDER_SIZE += NAME_SIZE
+math FOLDER_SIZE -= FOLDER_OFF
+math NAMESZ -= 2
+
+goto FOLDER_OFF
+#math FOLDERSZ = FOLDER_SIZE
+#math FOLDERSZ /= FOLDERS
+math FOLDERSZ = XFOLDERSZ
+for i = 0 < FOLDERS
+    getdstring FOLDER FOLDERSZ
+    putarray 0 i FOLDER
+next i
+
+goto 0x30
+for i = 0 < FILES
+    get OFFSET long
+    get DUMMY long
+    get SIZE long
+    get CRC long
+    get FOLDER short MEMORY_FILE
+    getdstring NAME NAMESZ MEMORY_FILE
+    math OFFSET *= 0x10
+
+    math DO_LZX = 0
+    if SIZE > 8
+        savepos TMP
+        goto OFFSET
+        getdstring SIGN 8
+        if SIGN == "chunklzx"
+            math DO_LZX = 1
+        endif
+        goto TMP
+    endif
+
+    getarray FNAME 0 FOLDER
+    string FNAME += /
+    string FNAME += NAME
+
+    if DO_LZX == 0
+        log FNAME OFFSET SIZE
+    else
+        callfunction UNPACK
+    endif
+next i
+
+startfunction UNPACK
+    savepos TMP
+    goto OFFSET
+    idstring "chunklzx"
+    get DUMMY long
+    get FULLSIZE long
+    get SIZE long
+    get CHUNKS long
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    log MEMORY_FILE3 0 0
+    append
+    savepos OFFSET
+    for j = 0 < CHUNKS
+        math OFFSET x= 0x8
+        for # very lame, made on the fly
+            math T = OFFSET
+            math T %= 0x10
+            if T == 8
+                break
+            endif
+            math OFFSET += 8
+        next
+        goto OFFSET
+
+        get ZSIZE long
+        get ZIP long
+        savepos OFFSET
+        if ZIP == 3
+            clog MEMORY_FILE3 OFFSET ZSIZE SIZE
+        elif ZIP == 4
+            log MEMORY_FILE3 OFFSET ZSIZE
+        else
+            print "unknown ZIP type %ZIP%, contact me!"
+            cleanexit
+        endif
+        math OFFSET += ZSIZE
+    next j
+    append
+    get MYSIZE asize MEMORY_FILE3
+    if MYSIZE != FULLSIZE
+        print "Alert: MEMORY_FILE3 %MYSIZE% != %FULLSIZE%"
+    endif
+    log FNAME 0 FULLSIZE MEMORY_FILE3
+    goto TMP
+endfunction

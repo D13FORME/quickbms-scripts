@@ -1,0 +1,48 @@
+# Minecraft xbox360 PCK (script 0.1.1)
+#   tested with skins1.pck
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+get DUMMY long
+get NAMES long
+for i = 0 < NAMES
+    callfunction GET_MINECRAFT_NAME 1
+next i
+
+savepos INFO_OFF
+for EXTRACT = 0 < 2
+    goto INFO_OFF
+    get FILES long
+    for i = 0 < FILES
+        get SIZE long
+        callfunction GET_MINECRAFT_NAME 1
+        if EXTRACT != 0
+            set FNAME string NAME
+
+            savepos TMP
+            goto OFFSET
+            get ENTRIES long
+            for j = 0 < ENTRIES
+                callfunction GET_MINECRAFT_NAME 1
+            next j
+            savepos OFFSET
+            goto TMP
+
+            log FNAME OFFSET SIZE
+            math OFFSET += SIZE
+        endif
+    next i
+    savepos OFFSET
+next EXTRACT
+
+startfunction GET_MINECRAFT_NAME
+    get DUMMY long
+    
+    get NAMESZ long
+    math NAMESZ *= 2
+    getdstring NAME NAMESZ
+    putvarchr NAME NAMESZ 0 short   # quickbms fix
+    set NAME unicode NAME
+    
+    get DUMMY long
+endfunction

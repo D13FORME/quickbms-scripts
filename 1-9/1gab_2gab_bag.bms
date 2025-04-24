@@ -1,0 +1,59 @@
+# 1gab / 2gab / bag
+#   Dragon Sword, JianLong, Revelation
+#   thanks Ekey :)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzo1x
+
+get MAGIC long
+get dwTotalFiles long
+get dwTableOffset long
+if MAGIC == 0x62616731
+    math XOR_FILES = 0xe7356461
+    math XOR_OFFSET = 0xcb449442
+    math XOR1 = 0x698346BD
+    math XOR2 = 0x867389FE
+    math XOR3 = 0xABEDC59D
+elif MAGIC == 0x62616732
+    math XOR_FILES = 0x27252421
+    math XOR_OFFSET = 0x3b343432
+    math XOR1 = 0x5953565D
+    math XOR2 = 0x6663696E
+    math XOR3 = 0x7B7D757D
+else
+    print "Error: unsupported magic signature %MAGIC|x%"
+    cleanexit
+endif
+math dwTotalFiles ^ XOR_FILES
+math dwTableOffset ^ XOR_OFFSET
+
+goto dwTableOffset
+for i = 0 < dwTotalFiles
+    savepos ENTRY_OFF
+
+    get NAME_CRC long
+    xmath NAME_CRC "NAME_CRC ^ ENTRY_OFF ^ XOR1"
+
+    if MAGIC == 0x62616732
+        get NAME_CRC2 long  # ???
+    endif
+
+    get OFFSET long
+    xmath OFFSET "OFFSET ^ ENTRY_OFF ^ XOR2"
+
+    get ZSIZE long
+    xmath ZSIZE "ZSIZE ^ ENTRY_OFF ^ XOR3"
+
+    savepos TMP
+    goto OFFSET
+    getdstring DUMMY 0x18
+    get ZIP long
+    if ZIP == 0x5a5a5a5a
+        get SIZE long
+        savepos OFFSET
+        clog "" OFFSET ZSIZE SIZE
+    else
+        log "" OFFSET ZSIZE
+    endif
+    goto TMP
+next i

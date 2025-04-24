@@ -1,0 +1,8 @@
+# lzma files (created with lzmautil)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzma86head
+get SIZE asize
+get NAME filename
+string NAME -= ".lzma"
+clog NAME 0 SIZE SIZE   # these files have the uncompressed size inside their header

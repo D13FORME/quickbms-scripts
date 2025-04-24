@@ -1,0 +1,41 @@
+# Kritika Online ALP/ALPH
+#   by chrrox and updated by aluigi
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE "ALPH"
+open FDDE "ALP" 1
+comtype lzma_0  # same as msf
+get TSIZE asize
+idstring "GKPA"
+get VERSION short
+get FTABLE long
+goto FTABLE
+Do
+    filexor ""
+    get TBLSIZE long
+    savepos TMP
+    filexor "\xDF\x97\x6F\x03" TMP
+    getdstring MAGIC 4
+    if MAGIC == "DGKP"
+        getdstring NULL 0xA
+        get NSIZE short
+        math NSIZE * 2
+        getdstring UNAME NSIZE
+        set DIRNAME unicode UNAME
+    else
+        getdstring NULL 0x7
+        get OFFSET long
+        get SIZE long
+        get ZSIZE long
+        getdstring NULL 0xC
+        get NSIZE short
+        math NSIZE * 2
+        getdstring UNAME NSIZE
+        set NAME unicode UNAME
+        string NAME p= "%s/%s" DIRNAME NAME
+        filexor "\xDF\x97\x6F\x03" OFFSET 1
+        clog NAME OFFSET ZSIZE SIZE 1
+    endif
+    math TMP += TBLSIZE
+    goto TMP
+While TMP < TSIZE 

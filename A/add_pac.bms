@@ -1,0 +1,66 @@
+# "add" PAC (script 0.2)
+#   Gintama Yorozuya
+#   Kenshin
+#   Shinkon Gattai Godannar
+#
+# Try http://aluigi.org/papers/bms/others/lzs.bms for the compressed files
+#
+# script for QuickBMS http://quickbms.aluigi.org
+
+get EXT extension
+if EXT == "bin"
+    get BIN_SIZE asize
+    log MEMORY_FILE 0 BIN_SIZE
+    for BIN_OFFSET = 0 < BIN_SIZE
+        getdstring PAC_NAME 0x20 MEMORY_FILE
+        get PAC_DUMMY long MEMORY_FILE
+        get PAC_SIZE long MEMORY_FILE
+        savepos BIN_OFFSET MEMORY_FILE
+
+        open FDSE PAC_NAME
+        callfunction EXTRACT 1
+    next
+else
+    callfunction EXTRACT 1
+endif
+
+startfunction EXTRACT
+    savepos PAC_OFF
+    idstring "add\0"
+    get VER byte
+    getdstring DUMMY 3
+    get OFFSET long
+    if OFFSET u> 0xffff
+        endian big
+        reverselong OFFSET
+    endif
+    if VER <= 4
+        get DUMMY long
+    endif
+    get FILES long
+    math OFFSET += PAC_OFF
+    goto OFFSET
+
+    for i = 0 < FILES
+        get OFFSET long
+        get SIZE long
+        get DUMMY long
+        get TSTAMP long
+        if VER <= 4
+            get NAME_OFF long
+            get DUMMY long
+            get DUMMY long
+            get DUMMY long
+
+            savepos TMP
+            goto NAME_OFF
+            get NAME string
+            goto TMP
+        else
+            get NAME string
+            padding 4
+        endif
+
+        log NAME OFFSET SIZE
+    next i
+endfunction

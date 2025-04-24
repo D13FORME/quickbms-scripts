@@ -1,0 +1,40 @@
+IDString "XMBF"
+Open FDDE big 1
+Endian big
+GetDString DUMMY 12
+Get OFFS long
+GoTo OFFS
+Get DUMMY long
+Get NUMHASHES long
+Get HASHOFFSET long
+Math HASHOFFSET += OFFS
+Get NUMFILEREC long
+Get FILERECOFFSET long
+Math FILERECOFFSET += OFFS
+If NUMHASHES != NUMFILEREC
+  CleanExit
+EndIf
+For I = 0 < NUMHASHES
+  GoTo HASHOFFSET
+  Get HASH1 long
+  Get HASH2 long
+  String NAME p= "%08X%08X.bin" HASH1 HASH2
+  SavePos HASHOFFSET
+  GoTo FILERECOFFSET
+  Get FILESIZE long
+  Get DUMMY long # compression?
+  Get FILEOFFSET long
+  SavePos FILERECOFFSET
+  Math MEMSIZE = FILESIZE
+  Math MEMSIZE x 4
+  Log MEMORY_FILE FILEOFFSET MEMSIZE 1
+  If MEMSIZE != FILESIZE
+    Math MEMSIZE -= 4
+    GetVarChr TMP MEMORY_FILE MEMSIZE long
+    Math TMP ^= 0xD7A8E2D4
+    PutVarChr MEMORY_FILE MEMSIZE TMP long
+  EndIf
+  FileXOR "\xD7\xA8\xE2\xD4"
+  Log NAME 0 FILESIZE MEMORY_FILE
+  FileXOR ""
+Next I

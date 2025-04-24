@@ -1,0 +1,109 @@
+# Codemasters NeFS archives
+#   tested with F1 2013
+#   other games may use encryption, it will be supported in future
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic   # deflate, but I want to have room for errors
+idstring "NeFS"
+getdstring DUMMY 0x20
+getdstring DUMMY 0x40
+get DUMMY long
+get DUMMY long
+get FILES long
+get DUMMY long
+getdstring DUMMY 0xc
+get DUMMY long
+get DUMMY long
+get INFO_OFF long
+get EOF_INFO long
+get ENTRIES_OFF long
+get DUMMY2_OFF long
+get NAMES_OFF long
+get ZSIZES_OFF long
+get EOF_INFO2 long
+get ZERO long
+
+xmath ENTRIES "(NAMES_OFF - ENTRIES_OFF) / 0x14"
+goto ENTRIES_OFF
+for i = 0 < ENTRIES
+    get PREV_ID long
+    get NEXT_ID long
+    get NAME_OFF long
+    get SIZE long
+    get MYID long
+
+    savepos TMP
+    math NAME_OFF += NAMES_OFF
+    goto NAME_OFF
+    get NAME string
+    goto TMP
+
+    putarray 0 i PREV_ID
+    putarray 1 i NEXT_ID
+    putarray 2 i NAME
+    putarray 3 i SIZE
+    putarray 4 i MYID
+next i
+
+xmath ZSIZES "(EOF_INFO2 - ZSIZES_OFF) / 8"
+goto ZSIZES_OFF
+for i = 0 < ZSIZES
+    get ZSIZE long
+    get DUMMY short # ZIP? 0x7
+    get DUMMY short
+    putarray 5 i ZSIZE
+next i
+
+goto INFO_OFF
+for i = 0 < FILES
+    get OFFSET longlong
+    get ENTRY long
+    get ZSIZE_ENTRY long
+    get FILE_NUM long
+
+    if OFFSET == 0
+        # folders
+    else
+        getarray PREV_ID 0 ENTRY
+        getarray NEXT_ID 1 ENTRY
+        getarray NAME 2 ENTRY
+        getarray SIZE 3 ENTRY
+        getarray MYID 4 ENTRY
+        set FNAME string NAME
+        do
+            for j = 0 < ENTRIES
+                getarray MYID 4 j
+                if MYID == PREV_ID
+                    break
+                endif
+            next j
+            getarray PREV_ID 0 j
+            getarray NAME 2 j
+            string FNAME p= "%s/%s" NAME FNAME
+        while PREV_ID != MYID
+
+        # the following is useful only for reimporting of small files!
+        if SIZE <= 0x00020000
+            getarray ZSIZE 5 ZSIZE_ENTRY
+            clog FNAME OFFSET ZSIZE SIZE
+        else
+
+        math OLD_ZSIZE = 0
+        putvarchr MEMORY_FILE SIZE 0
+        log MEMORY_FILE 0 0
+        append
+        for MYSIZE = 0 < SIZE
+            getarray ZSIZE 5 ZSIZE_ENTRY
+            math ZSIZE_ENTRY += 1
+            xmath TMP "ZSIZE - OLD_ZSIZE"
+            xmath TMP_OFF "OFFSET + OLD_ZSIZE"
+            clog MEMORY_FILE TMP_OFF TMP SIZE
+            get MYSIZE asize MEMORY_FILE
+            math OLD_ZSIZE = ZSIZE
+        next
+        append
+
+        log FNAME 0 SIZE MEMORY_FILE
+        endif
+    endif
+next i

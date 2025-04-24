@@ -1,0 +1,31 @@
+# Alien Isolation PAK
+# script for QuickBMS http://quickbms.aluigi.org
+
+get EXT extension
+if EXT != "pak"
+    cleanexit
+endif
+
+get ZERO long
+get DUMMY long  # 0xe
+endian guess DUMMY
+get DUMMY long
+get XFILES long
+get FILES long
+get DUMMY long
+get DUMMY long
+get DUMMY long
+savepos BASE_OFF
+xmath BASE_OFF "BASE_OFF + (FILES * 0x30)"
+for i = 0 < FILES
+    get ZERO long
+    get ZERO long
+    get SIZE long
+    get XSIZE long  # size containing the missing zeroes at the end (not included in the archived file)
+    get OFFSET long
+    getdstring DUMMY 0x1c
+    math OFFSET += BASE_OFF
+    if XSIZE != 0
+        log "" OFFSET SIZE
+    endif
+next i

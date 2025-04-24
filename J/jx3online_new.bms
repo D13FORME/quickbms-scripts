@@ -1,0 +1,42 @@
+# JX3 Online new
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzo1x
+get FULLSIZE asize
+for OFFSET = 0 < FULLSIZE
+    # you will receive an error, ignore it
+    goto OFFSET
+    do
+        get TMP byte
+    while TMP == 0xce
+    goto -1 0 SEEK_CUR
+    savepos MYENTRY_OFF
+    
+    # offset guessed, this is a work-around
+    for
+        getdstring DUMMY 0xc
+        get SIZE longlong
+        get ENTRY_OFF longlong
+        if ENTRY_OFF == 0
+            break
+        elif ENTRY_OFF == MYENTRY_OFF
+            break
+        endif
+        math MYENTRY_OFF -= 1
+        goto MYENTRY_OFF
+    next
+    
+    get ZSIZE longlong
+    get ZIP long
+    getdstring DUMMY 0x10
+    savepos OFFSET
+    if ZIP == 0
+        log "" OFFSET SIZE
+    elif ZIP == 1
+        clog "" OFFSET ZSIZE SIZE
+    else
+        # unknown
+        log "" OFFSET ZSIZE
+    endif
+    math OFFSET += ZSIZE
+next

@@ -1,0 +1,59 @@
+# RPA archives (ren.py) (no python version)
+#   use this lame work-around script if you don't have python installed
+# script for QuickBMS http://quickbms.aluigi.org
+
+math OFFSET = 0
+math KEY = 0
+
+getdstring SIGN 8
+if SIGN == "RPA-3.0 "
+    goto 8
+    getdstring TMP 16
+    set OFFSET string "$"   # alternative to 0x, not handled internally
+    string OFFSET += TMP
+
+    goto 25
+    getdstring TMP 8
+    set KEY string "$"
+    string KEY += TMP
+
+elif SIGN == "RPA-2.0 "
+    goto 8
+    get TMP line
+    set OFFSET string "$"   # alternative to 0x, not handled internally
+    string OFFSET += TMP
+endif
+
+get SIZE asize
+math SIZE -= OFFSET
+comtype zlib_dynamic
+clog MEMORY_FILE OFFSET SIZE SIZE
+
+get INFO_SIZE asize MEMORY_FILE
+math INFO_SIZE -= 10
+getdstring DUMMY 2 MEMORY_FILE
+for i = 0
+    savepos TMP MEMORY_FILE
+    if TMP >= INFO_SIZE
+        cleanexit
+    endif
+
+    getdstring DUMMY 4 MEMORY_FILE
+    findloc TMP string "\x58" MEMORY_FILE
+    math TMP += 1
+    goto TMP MEMORY_FILE
+    get NAMESZ long MEMORY_FILE
+    getdstring NAME NAMESZ MEMORY_FILE
+    findloc TMP string "\x8a\x04" MEMORY_FILE
+    math TMP += 2
+    goto TMP MEMORY_FILE
+    get OFFSET long MEMORY_FILE
+    get DUMMY byte MEMORY_FILE
+    get DLEN long MEMORY_FILE
+    get DUMMY byte MEMORY_FILE
+    get START byte MEMORY_FILE
+
+    math OFFSET ^= KEY
+    math DLEN ^= KEY
+    log NAME OFFSET DLEN
+next i

@@ -1,0 +1,38 @@
+# Orchid games
+#   Royal Trouble
+#   Hearwild Solitaier series
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype bzip2
+set PATH string ""
+set NAME string ""
+get XFOLDERS long
+get XFILES long
+callfunction EXTRACT
+
+startfunction EXTRACT
+    string PATH += NAME
+    string PATH += /
+    math FILES = XFILES
+    for i = 0 < FILES
+        get NAMESZ long
+        getdstring NAME NAMESZ
+        get TYPE byte
+        get OFFSET long
+        get XFOLDERS long
+        get XFILES long
+        get SIZE long
+        get ZSIZE long
+        if TYPE == 0
+            set FNAME string PATH
+            string FNAME += NAME
+            if ZSIZE == 0
+                log FNAME OFFSET SIZE
+            else
+                clog FNAME OFFSET ZSIZE SIZE
+            endif
+        else
+            callfunction EXTRACT
+        endif
+    next i
+endfunction

@@ -1,0 +1,68 @@
+# SCS Software games (script 0.2)
+#   Euro Truck Simulator 2
+#   Scania
+#   any other game developed by SCS Software, both ZIP and SCS# formats supported
+# script for QuickBMS http://quickbms.aluigi.org
+
+set ZIP_SIGN binary "PK\x03\x04"
+
+getdstring SIGN 4
+if SIGN == "SCS#"
+    get DUMMY long
+    get DUMMY long
+    get FILES long
+    get OFFSET long
+    goto OFFSET
+    for i = 0 < FILES
+        getdstring DUMMY 8
+        get OFFSET long
+        get DUMMY long  # OFFSET64?
+        get TYPE long
+        get CRC long
+        get SIZE long
+        get ZSIZE long
+        if ZSIZE == SIZE
+            log "" OFFSET SIZE
+        else
+            clog "" OFFSET ZSIZE SIZE
+        endif
+    next i
+
+elif SIGN == ZIP_SIGN
+    ComType deflate
+    goto 0
+    get zip_filesize asize
+    for offset = 0 < zip_filesize
+        getdstring sign 4
+        if sign == ZIP_SIGN
+            get ver             short
+            get flag            short
+            get method          short
+            get modtime         short
+            get moddate         short
+            get crc             long
+            get comp_size       long
+            get uncomp_size     long
+            get name_len        short
+            get extra_len       short
+            getdstring name     name_len
+            getdstring extra    extra_len
+            savepos offset
+
+            if method == 8
+                CLog name offset comp_size uncomp_size
+            else
+                Log name offset uncomp_size
+            endif
+
+            math offset += comp_size
+            goto offset
+        else
+            cleanexit
+        endif
+    next
+
+else
+    print "Error: unknown signature %SIGN%"
+    cleanexit
+endif

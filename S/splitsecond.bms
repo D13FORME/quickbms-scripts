@@ -1,0 +1,39 @@
+# Black Rock Studios (script 0.1.1)
+#   Pure
+#   Split Second / Velocity
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzss
+get VER long
+if VER == 0
+    endian big
+endif
+get INFO_SIZE long
+get FILES long
+get INFO_OFF long
+goto INFO_OFF
+
+get DUMMY long
+get OFFSET long
+for i = 0 < FILES
+    get ZIP long
+    get OFFSET long
+    get ZSIZE long
+    if VER != 0
+        get SIZE long
+    endif
+    get CRC long
+    if ZIP == 0
+        log "" OFFSET ZSIZE
+    else
+        #if VER == 0
+            savepos TMP
+            goto OFFSET
+            get SIZE long
+            goto TMP
+        #endif
+        math OFFSET += 4    # SIZE again
+        math ZSIZE -= 4
+        clog "" OFFSET ZSIZE SIZE
+    endif
+next i

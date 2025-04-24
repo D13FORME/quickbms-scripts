@@ -1,0 +1,14 @@
+# Chompy
+# script for QuickBMS http://quickbms.aluigi.org
+
+get DUMMY long
+get OFFSET long
+get FULLSIZE asize
+for OFFSET = OFFSET < FULLSIZE
+    goto OFFSET
+    idstring "XNBw"
+    get DUMMY short
+    get SIZE long
+    log "" OFFSET SIZE
+    math OFFSET += SIZE
+next

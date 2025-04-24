@@ -1,0 +1,22 @@
+# Blue Dragon
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE ipk
+idstring "IPK1"
+get DUMMY long
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    getdstring NAME 0x40
+    get DUMMY long
+    get ZSIZE long
+    get OFFSET long
+    get SIZE long
+    getdstring DUMMY 0x10
+    if SIZE == ZSIZE
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i
+

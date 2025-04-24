@@ -1,0 +1,22 @@
+# Wildfire Studios
+#   Tumblebugs 2
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype bzip2
+idstring "WFAR"
+get DUMMY long
+get FILES long
+getdstring DUMMY 0x80
+for i = 0 < FILES
+    get OFFSET long
+    get ZSIZE long
+    get SIZE long
+    get ZIP long
+    getdstring DUMMY 0x10
+    get NAME string
+    if ZIP == 0
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

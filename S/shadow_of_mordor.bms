@@ -1,0 +1,168 @@
+# Shadow of Mordor (script 0.3.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic   # handle both zlib and deflate (ps3)
+math UNPACKED = 0
+get FILE_SIZE asize
+log MEMORY_FILE 0 FILE_SIZE
+for TRY = 0 < 2
+    goto 0 MEMORY_FILE
+    getdstring TYPE 4 MEMORY_FILE
+
+    # endian
+    if TYPE == "RXET"
+        set TYPE string "TEXR"
+        endian big
+    elif TYPE == "IMTL"
+        set TYPE string "LTMI"
+        endian big
+    elif TYPE == "LDNB"
+        set TYPE string "BNDL"
+        endian big
+    endif
+
+    if TYPE == "TEXR"
+        goto 0x10 MEMORY_FILE
+        get NAMESZ short MEMORY_FILE
+        getdstring NAME NAMESZ MEMORY_FILE
+        getdstring DUMMY 3 MEMORY_FILE
+        savepos OFFSET MEMORY_FILE
+        get SIZE asize MEMORY_FILE
+        math SIZE -= OFFSET
+        log NAME OFFSET SIZE MEMORY_FILE
+        cleanexit   # NECESSARY!
+
+    elif TYPE == "LTMI"
+        goto 0x18 MEMORY_FILE
+        get NAMESZ short MEMORY_FILE
+        getdstring NAME NAMESZ MEMORY_FILE
+        savepos OFFSET MEMORY_FILE
+        get SIZE asize MEMORY_FILE
+        math SIZE -= OFFSET
+        log NAME OFFSET SIZE MEMORY_FILE
+        cleanexit   # NECESSARY!
+
+    elif TYPE == "BNDL"
+        get DUMMY long MEMORY_FILE
+        get NAMES_SIZE long MEMORY_FILE
+        get OFFSET long MEMORY_FILE
+        get ZERO long MEMORY_FILE
+        get OTHER_NAMES long MEMORY_FILE
+        get FILES long MEMORY_FILE
+        savepos TMP MEMORY_FILE
+        log MEMORY_FILE2 TMP NAMES_SIZE MEMORY_FILE
+        math OFFSET += TMP
+
+        goto OFFSET MEMORY_FILE
+        for i = 0 < OTHER_NAMES
+            get NAME_OFF long MEMORY_FILE
+        next i
+        savepos OFFSET MEMORY_FILE
+
+        for i = 0 < FILES
+            goto OFFSET MEMORY_FILE
+            get NAME_OFF long MEMORY_FILE
+            get SIZE long MEMORY_FILE
+            savepos OFFSET MEMORY_FILE
+
+            goto NAME_OFF MEMORY_FILE2
+            get NAME string MEMORY_FILE2
+
+            log NAME OFFSET SIZE MEMORY_FILE
+            math OFFSET += SIZE
+        next i
+        cleanexit   # NECESSARY!
+
+    elif TYPE == "RATL"
+        comtype xmemdecompress
+        endian big
+        get DUMMY long MEMORY_FILE
+        get NAMES_SIZE long MEMORY_FILE
+        get DUMMY long MEMORY_FILE
+        get FILES long MEMORY_FILE
+        getdstring DUMMY 0x1c MEMORY_FILE
+        savepos OFFSET MEMORY_FILE
+        log MEMORY_FILE2 OFFSET NAMES_SIZE MEMORY_FILE
+        math OFFSET += NAMES_SIZE
+
+        goto OFFSET MEMORY_FILE
+        for i = 0 < FILES
+            get NAME_OFF long MEMORY_FILE
+            get OFFSET longlong MEMORY_FILE
+            get ZSIZE longlong MEMORY_FILE
+            get SIZE longlong MEMORY_FILE
+            get DUMMY long MEMORY_FILE
+
+            goto NAME_OFF MEMORY_FILE2
+            get NAME string MEMORY_FILE2
+            string NAME R= "_" "/"
+
+            if ZSIZE > 0
+                savepos TMP MEMORY_FILE
+                math CHUNK_SIZE = 0x10000
+                xmath OFFSET_LIMIT "OFFSET + ZSIZE"
+                putvarchr MEMORY_FILE3 SIZE 0
+                log MEMORY_FILE3 0 0
+                append
+                for OFFSET = OFFSET < OFFSET_LIMIT
+                    goto OFFSET MEMORY_FILE
+                    get CHUNK_ZSIZE long MEMORY_FILE
+                    savepos OFFSET MEMORY_FILE
+                    if CHUNK_ZSIZE & 0xf0000000 # 0x80000000 is ok too
+                        math CHUNK_ZSIZE &= 0x0fffffff
+                        log MEMORY_FILE3 OFFSET CHUNK_ZSIZE MEMORY_FILE
+                    else
+                        clog MEMORY_FILE3 OFFSET CHUNK_ZSIZE CHUNK_SIZE MEMORY_FILE
+                    endif
+                    math OFFSET += CHUNK_ZSIZE
+                    math OFFSET x= 4
+                next
+                append
+                log NAME 0 SIZE MEMORY_FILE3
+                goto TMP MEMORY_FILE
+            endif
+        next i
+        cleanexit   # NECESSARY!
+
+    elif TYPE == "SRHR"
+    elif TYPE == "ANIX"
+    elif TYPE == "LTFX"
+    elif TYPE == "MMSH"
+    elif TYPE == "SKEL"
+
+    else
+        if UNPACKED == 0
+            callfunction UNPACK 1
+            math UNPACKED += 1
+        else
+            print "Error: unknown file type %TYPE%"
+            cleanexit
+        endif
+    endif
+next TRY
+
+print "Error: unsupported file type %TYPE%, probably not an archive"
+cleanexit
+
+startfunction UNPACK
+    # unpack the compressed chunks
+    get FULL_SIZE asize
+    xmath TMP "FULL_SIZE * 2"
+    putvarchr MEMORY_FILE TMP 0 # it's a bit faster
+    log MEMORY_FILE 0 0
+    append
+    for OFFSET = 0 < FULL_SIZE
+        goto OFFSET
+        get ZSIZE long
+        get SIZE long
+        savepos OFFSET
+        if ZSIZE == SIZE
+            log MEMORY_FILE OFFSET SIZE
+        else
+            clog MEMORY_FILE OFFSET ZSIZE SIZE
+        endif
+        math OFFSET += ZSIZE
+        math OFFSET x= 4
+    next
+    append
+endfunction

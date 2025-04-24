@@ -1,0 +1,32 @@
+# Army Of Two - The 40th Day BNK Sound Bank Files (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "BKHD"
+get OFFSET long
+math TMP = OFFSET
+reverselong TMP
+if OFFSET u> TMP    # guess
+    endian big
+endif
+math OFFSET += 8
+goto OFFSET
+idstring "DIDX"
+get DIDX_SIZE long
+
+savepos BASE_OFF
+math BASE_OFF += DIDX_SIZE
+math BASE_OFF += 8  # DATA chunk
+
+math FILES = DIDX_SIZE
+math FILES /= 12
+
+for i = 0 < FILES
+    get DUMMY long
+    get OFFSET long
+    get SIZE long
+
+    math OFFSET += BASE_OFF
+    log "" OFFSET SIZE
+next i
+
+# HIRC header ignored, seems nothing useful

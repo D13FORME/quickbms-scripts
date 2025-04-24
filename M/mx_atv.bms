@@ -1,0 +1,74 @@
+# MX vs ATV series (script 0.2)
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE "database"
+comtype unzip_dynamic
+idstring "BXML"
+get DUMMY long
+get NAMES long
+get INFO_OFF long
+get INFO_SIZE long
+get DUMMY long
+get DUMMY long
+get ZERO long
+get ZSIZE long
+savepos OFFSET
+clog MEMORY_FILE OFFSET ZSIZE ZSIZE
+
+open FDDE "package"
+comtype xmemdecompress
+
+for i = 0 < NAMES
+    get NAME string MEMORY_FILE
+    putarray 0 i NAME
+next i
+putarray 0 i ""
+
+xmath INFO_LIMIT "INFO_OFF + INFO_SIZE"
+goto INFO_OFF MEMORY_FILE
+math BASE_OFF = 0
+callfunction EXTRACT
+
+startfunction EXTRACT
+    for
+        savepos TMP MEMORY_FILE
+        if TMP >= INFO_LIMIT
+            cleanexit
+        endif
+
+        get OFFSET long MEMORY_FILE
+        get SIZE long MEMORY_FILE
+        get ZERO long MEMORY_FILE
+        if SIZE == 0
+            math BASE_OFF = OFFSET
+            callfunction EXTRACT
+        else
+            get ZERO long MEMORY_FILE
+            get ONE long MEMORY_FILE
+            math OFFSET += BASE_OFF
+            callfunction UNPACK 1
+        endif
+    next
+endfunction
+
+startfunction UNPACK
+    goto OFFSET
+    get FILE_ZSIZE long
+    xmath NEXT_OFFSET "OFFSET + FILE_ZSIZE"
+    log MEMORY_FILE2 0 0
+    append
+    for OFFSET = OFFSET < NEXT_OFFSET
+        get SIZE long
+        get ZSIZE long
+        savepos OFFSET
+        clog MEMORY_FILE2 OFFSET ZSIZE SIZE
+        math OFFSET += ZSIZE
+        goto OFFSET
+    next
+    append
+    get DUMMY long
+    savepos OFFSET
+
+    get SIZE asize MEMORY_FILE2
+    log "" 0 SIZE MEMORY_FILE2
+endfunction

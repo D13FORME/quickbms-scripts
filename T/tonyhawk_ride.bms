@@ -1,0 +1,25 @@
+endian big
+idstring "PAK\0"
+get DUMMY short
+get DUMMY short
+get FILES long
+get NAME_SIZE long
+
+math OFFSET = FILES
+math OFFSET *= 24
+math OFFSET += 0x10
+log MEMORY_FILE OFFSET NAME_SIZE
+
+for i = 0 < FILES
+    get CRC long
+    get NAME_OFF long
+    get DUMMY long
+    get DUMMY long
+    get OFFSET long
+    get SIZE long
+
+    goto NAME_OFF MEMORY_FILE
+    get NAME string MEMORY_FILE
+
+    log NAME OFFSET SIZE
+next i

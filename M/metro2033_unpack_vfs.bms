@@ -1,0 +1,54 @@
+# Metro 2033 .vfs unpacker v1.2
+# (only unpacker, not decrypter. hhrhhr@gmail.com 03-2010)
+# script for QuickBMS http://aluigi.org/papers.htm#quickbms
+
+get source FILENAME
+open FDSE "content.vfi" 1
+get max_size asize 1
+get ffff long 1
+get chunk_size long 1
+savepos data_pos 1
+math offset = data_pos
+math offset += chunk_size
+set exit_while byte 0
+do
+	goto offset 1
+	get num long 1
+	get chunk_size long 1
+	savepos data_pos 1
+	math offset = data_pos
+	math offset += chunk_size
+	get num0 long 1
+	get strlen_filesize long 1
+	get file_name string 1
+	get file_size long 1
+	if file_name == source
+		log MEMORY_FILE data_pos chunk_size 1
+		get mem_max_size asize MEMORY_FILE
+		math mem_max_size -= 12
+		get mem_num0 long MEMORY_FILE
+		get mem_strlen_filesize long MEMORY_FILE
+		get mem_file_name string MEMORY_FILE
+		get mem_file_size long MEMORY_FILE
+		get mem_num1 long MEMORY_FILE
+		get mem_size long MEMORY_FILE
+		do
+			get mem_file_crc long MEMORY_FILE
+			get mem_file_offset long MEMORY_FILE
+			get mem_file_size_unp long MEMORY_FILE
+			get mem_file_size_pak long MEMORY_FILE
+			get mem_full_path_size long MEMORY_FILE
+			math mem_file_crc & 255
+			filexor mem_file_crc MEMORY_FILE
+			getdstring mem_full_path mem_full_path_size MEMORY_FILE
+			string mem_full_path -= 1
+			filexor 0 MEMORY_FILE
+			log mem_full_path mem_file_offset mem_file_size_pak
+			savepos mem_data_pos MEMORY_FILE
+		while mem_data_pos < mem_max_size
+		set exit_while byte 1
+	endif
+	if offset >= max_size
+		set exit_while byte 1
+	endif
+while exit_while != 1

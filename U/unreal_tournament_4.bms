@@ -1,0 +1,36 @@
+# Unreal Tournament 4
+# script for QuickBMS http://quickbms.aluigi.org
+
+goto -0x2c
+get DUMMY longlong
+get OFFSET longlong
+get SIZE longlong
+getdstring HASH 20
+
+goto OFFSET
+get NAMESZ long
+getdstring NAME NAMESZ
+get FILES long
+
+# the file offset points to an entry containing
+# the "same" OFFSET ZSIZE SIZE ZIP HASH ZERO fields,
+# just an additional backup... so let's skip them
+xmath BASE_OFF "8 + 8 + 8 + 4 + 20 + 5"
+
+for i = 0 < FILES
+    get NAMESZ long
+    getdstring NAME NAMESZ
+    get OFFSET longlong
+    get ZSIZE longlong
+    get SIZE longlong
+    get ZIP long    # ???
+    getdstring HASH 20
+    getdstring ZERO 5
+
+    math OFFSET += BASE_OFF
+    if ZIP == 0
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

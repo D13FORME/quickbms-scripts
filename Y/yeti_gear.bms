@@ -1,0 +1,46 @@
+# Yeti Engine (GEAR BigFile)
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "[ GEAR BigFile ]"
+get DUMMY long
+get DUMMY long
+get FILES long
+get DUMMY long
+
+savepos OFFSET_OFF
+for i = 0 < FILES
+    get DUMMY long
+    get DUMMY long
+next i
+
+savepos SIZE_OFF
+for i = 0 < FILES
+    get DUMMY long
+next i
+
+savepos CRC_OFF         # crc of the filenames?
+for i = 0 < FILES
+    get DUMMY long
+next i
+
+savepos DUMMY_OFF
+for i = 0 < FILES
+    get DUMMY string    # or byte?
+next i
+
+for i = 0 < FILES
+    goto OFFSET_OFF
+    get OFFSET long
+    get OFFSET64 long
+    savepos OFFSET_OFF
+
+    goto SIZE_OFF
+    get SIZE long
+    savepos SIZE_OFF
+
+    goto CRC_OFF
+    get CRC long
+    savepos CRC_OFF
+
+    log "" OFFSET SIZE # or sequential names: log "" OFFSET SIZE
+next i

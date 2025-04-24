@@ -1,0 +1,164 @@
+# Star Ocean (Tri-ace SLZ/PACK) (script 0.2b)
+# script for QuickBMS http://quickbms.aluigi.org
+
+get PACK_NAME basename
+getdstring SIGN 3
+if SIGN == "SLZ"
+    set NAME string PACK_NAME
+    set FILE_OFFSET long 0
+    callfunction slz_unpack
+    cleanexit
+endif
+
+goto 0
+idstring "PACK"
+get DUMMY_ENDIAN long
+if DUMMY_ENDIAN < 0x00ffffff   # lame endianess check
+    endian little
+else
+    endian big
+endif
+get FILES long
+get PACK_SIZE long
+for i = 0 < FILES
+    get DUMMY long
+    get FILE_ID long
+    get FILE_SIZE long
+    get FILE_OFFSET long
+
+    set NAME string PACK_NAME
+    string NAME += /
+    string NAME += i
+    callfunction slz_unpack
+
+    if DUMMY_ENDIAN < 0x00ffffff   # lame endianess check
+        endian little
+    else
+        endian big
+    endif
+next i
+
+startfunction slz_unpack
+    endian little
+    savepos OLD_OFFSET
+    goto FILE_OFFSET
+    getdstring SIGN 3
+    if SIGN == "SLZ"
+        math OFFSET = -1
+        string NAME += ".unslz"
+        #set NAME string ""
+        set OLD_NAME string NAME
+        log MEMORY_FILE 0 0
+        goto FILE_OFFSET
+
+        do
+            savepos TMP_OFF
+            getdstring SIGN 3
+            get TYPE byte
+            savepos TMP
+            get DUMMY long
+            if DUMMY < 0x00ffffff   # lame endianess check
+                set X360_MODE long 0
+                math ZSIZE = DUMMY
+                set SPLIT byte 0
+                set MULTI byte 0
+            else
+                set X360_MODE long 1
+                endian big
+                goto TMP
+                get SPLIT byte
+                get MULTI byte
+                get DUMMY short
+                get ZSIZE long
+            endif
+            get SIZE long
+            get ZERO long   # offset for the next chunk?
+            if X360_MODE != 0
+                get ZERO long
+            endif
+
+            set CHUNKS_SIZE long 0
+            set SLZ_CHUNK long 0
+            if MULTI == 0
+                savepos OFFSET
+            else
+                math OFFSET = ZERO
+                math OFFSET += TMP_OFF
+                if TYPE != 0
+                    log MEMORY_FILE2 OFFSET 4
+                    get CHUNKS_SIZE long MEMORY_FILE2
+                    math OFFSET += 4
+                    log MEMORY_FILE2 OFFSET CHUNKS_SIZE
+                    math OFFSET -= 4
+                    math OFFSET += CHUNKS_SIZE
+                    math SIZE = 0x00010000
+                endif
+            endif
+
+            if MULTI != 0
+                set NAME string "MEMORY_FILE"
+                math SPLIT += 1
+                if SPLIT < MULTI
+                    set SLZ_CHUNK long 1
+                endif
+                math TMP_OFF += 0x20
+                goto TMP_OFF
+                append
+            endif
+
+            do
+                if CHUNKS_SIZE != 0
+                    get ZSIZE short MEMORY_FILE2
+                endif
+
+                if ZSIZE != 0
+                    callfunction UNPACK
+                    math OFFSET += ZSIZE
+                endif
+
+                if CHUNKS_SIZE == 0
+                    math ZSIZE = 0
+                endif
+            while ZSIZE != 0
+
+            if MULTI != 0
+                append
+            endif
+        while SLZ_CHUNK != 0
+
+        if MULTI != 0
+            set NAME string OLD_NAME
+            get SIZE asize MEMORY_FILE
+            log NAME 0 SIZE MEMORY_FILE
+        endif
+    else
+        string NAME += "."
+        string NAME += SIGN
+        log NAME FILE_OFFSET FILE_SIZE
+    endif
+    goto OLD_OFFSET
+    endian little
+endfunction
+
+startfunction UNPACK
+                if TYPE == 0
+                    log NAME OFFSET ZSIZE
+                elif TYPE == 1
+                    comtype slz_01
+                    clog NAME OFFSET ZSIZE SIZE
+                elif TYPE == 2
+                    comtype slz_02
+                    clog NAME OFFSET ZSIZE SIZE
+                #elif TYPE == 3
+                    #log NAME OFFSET ZSIZE
+                elif TYPE == 4
+                    #string NAME += ".xbcompress"
+                    log NAME OFFSET ZSIZE
+                elif TYPE == 5
+                    comtype zlib_noerror
+                    clog NAME OFFSET ZSIZE SIZE
+                else
+                    print "Error: unsupported type %TYPE%, contact me"
+                    cleanexit
+                endif
+endfunction

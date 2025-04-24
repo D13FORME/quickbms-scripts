@@ -1,0 +1,133 @@
+# War Inc. Battle Zone r3dFS (script 0.1.5)
+#    works also with DeadZ, WarZ / Infestation, StargateZ and all the other fan-made servers and contents
+# script for QuickBMS http://quickbms.aluigi.org
+
+set SIGN_AE binary "\xbc\xb9\xc6"   # ApocalypseEnd
+
+getdstring SIGN 3
+if SIGN != "arf"
+if SIGN != SIGN_AE
+    print "you must open only the first file, WO_00.bin"
+    cleanexit
+endif
+endif
+get BIN_TYPE byte
+if BIN_TYPE == 0xbe # ApocalypseEnd
+    math BIN_TYPE = 'l'
+endif
+
+get VER long
+if BIN_TYPE == 'l'      # War Inc
+    get BUILD long
+    get FILES long
+    get SIZE long
+    get INFO_CRC long
+elif BIN_TYPE == 'r'    # DeadZ
+    get SIZE long
+    get INFO_CRC long
+    get BUILD long
+    get FILES long
+else
+    print "Error: type %BIN_TYPE% not supported yet, contact me"
+    cleanexit
+endif
+savepos OFFSET
+comtype unzip_dynamic
+get SIZE asize
+math SIZE -= OFFSET
+clog MEMORY_FILE OFFSET SIZE SIZE
+comtype zlib
+get MEMORY_SIZE asize MEMORY_FILE
+
+get PACK_EXT extension
+get PACK_BASENAME basename
+string PACK_BASENAME >>= "_"
+
+math WORKAROUND = 0
+math LAST_PACK = -1
+for i = 0 #< FILES
+    # FILES is ignored in order to grant compatibility with invalid archives
+    savepos RESTORE_OFFSET MEMORY_FILE
+    savepos TMP MEMORY_FILE
+    if TMP >= MEMORY_SIZE
+        break
+    endif
+
+    if BIN_TYPE == 'l'      # War Inc
+        getdstring NAME 260 MEMORY_FILE
+        get TYPE    byte MEMORY_FILE
+        if WORKAROUND == 2
+            get ZSIZE   long MEMORY_FILE
+            get CRC     long MEMORY_FILE
+            get SIZE    long MEMORY_FILE
+            get PACK    byte MEMORY_FILE
+            get OFFSET  long MEMORY_FILE
+        else
+            get PACK    byte MEMORY_FILE
+            get OFFSET  long MEMORY_FILE
+            get SIZE    long MEMORY_FILE
+            get ZSIZE   long MEMORY_FILE
+            get CRC     long MEMORY_FILE
+        endif
+    elif BIN_TYPE == 'r'    # DeadZ
+        get CRC     long MEMORY_FILE
+        get OFFSET  long MEMORY_FILE
+        get SIZE    long MEMORY_FILE
+        getdstring NAME 260 MEMORY_FILE
+        get TYPE    byte MEMORY_FILE
+        get PACK    byte MEMORY_FILE
+        get ZSIZE   long MEMORY_FILE
+    endif
+    getdstring DUMMY 0x12 MEMORY_FILE
+
+
+    # work-around for some customizations (recent StargateZ)
+    # being WarInc "open source", any server can adopt any customization,
+    # so it's impossible to make a script compatible with all the games
+    if i == 0
+        if SIZE == 0
+            if OFFSET != 0
+                math WORKAROUND = 1
+            endif
+        endif
+    endif
+    if WORKAROUND == 1
+        math TMP    = SIZE
+        math SIZE   = OFFSET
+        math OFFSET = TMP
+    endif
+
+
+    math PACK += 1
+
+    # new SG
+    if PACK u> 10
+        math WORKAROUND = 2
+        math PACK = -1  # easy way to skip the extraction
+    endif
+
+    if PACK < 0
+        goto RESTORE_OFFSET MEMORY_FILE
+        math i -= 1
+    else
+        if PACK != LAST_PACK
+            string PACK_NAME p= "%s_%02d.%s" PACK_BASENAME PACK PACK_EXT
+            open FDSE PACK_NAME 1
+            math LAST_PACK = PACK
+        endif
+        math OFFSET += 4    # arfd
+
+        if TYPE == 1    # COMPRESS_STORE
+            log NAME OFFSET SIZE 1
+        elif TYPE == 2  # COMPRESS_INFLATE
+            comtype unzip_dynamic   # found one file wrongly stored as zlib, so go with super compatibility
+            clog NAME OFFSET ZSIZE SIZE 1
+        elif TYPE == 4  # COMPRESS_LZO
+            comtype lzo1x
+            clog NAME OFFSET ZSIZE SIZE 1
+        else
+            print "unknown TYPE %TYPE%, contact me"
+            cleanexit
+        endif
+    endif
+next i

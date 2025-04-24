@@ -1,0 +1,21 @@
+# Still Life 2
+# script for QuickBMS http://quickbms.aluigi.org
+
+filexor "0x29 0x23 0xBE 0x84 0xE1 0x6C 0xD6 0xAE 0x52 0x90 0x49 0xF1 0xF1 0xBB 0xE9 0xEB"
+idstring GMGB
+get FILES long
+
+savepos NAMESTART
+for i = 1 to FILES
+    get NAME string
+    get SIZE long
+next i
+
+savepos OFFSET
+goto NAMESTART
+for i = 1 to FILES
+    get NAME string
+    get SIZE long
+    log NAME OFFSET SIZE
+    math OFFSET += SIZE
+next i

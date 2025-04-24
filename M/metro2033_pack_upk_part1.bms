@@ -1,0 +1,25 @@
+# Metro 2033 .upk packer part1 v1.2
+# (hrhhr@gmail.com 03-2010)
+# script for QuickBMS http://aluigi.org/papers.htm#quickbms
+
+set all_size long 0
+set is_exit byte 0
+log "file2" 0 0
+append
+do
+	scandir ".\content" fname fsize
+	if fname != ""
+		math all_size += fsize
+		open "." fname 1
+		log "file2" 0 fsize 1
+	else
+		set is_exit byte 1
+	endif
+while is_exit < 1
+append
+
+#section 1
+log MEMORY_FILE 0 0
+put 0 long MEMORY_FILE
+put all_size long MEMORY_FILE
+log "file1" 0 8 MEMORY_FILE

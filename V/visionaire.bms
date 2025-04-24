@@ -1,0 +1,180 @@
+# Visionaire Player/Studio (script 0.3.1)
+#   notes:
+#   - in some archives I have noticed a final file that uses an unknown compression
+#     it can't be extracted for the moment
+#   - the script works also with executables and encrypted old VIS archives
+# script for QuickBMS http://quickbms.aluigi.org
+
+# build the keys database
+# to developers: use -a DUMP for an help guessing the key
+
+math i = 0
+set KEY binary "76093af7c458e3c5"   # md5 hash of unicode "VSADV3PL" (many games)
+putarray 8 i KEY
+
+math i += 1
+set KEY binary "98d1a1f120d8ce55"   # md5 hash of unknown string (Deponia)
+putarray 8 i KEY
+
+math i += 1
+set KEY binary "af0512966ae16580"   # The Dark Eye: Chains of Satinav
+putarray 8 i KEY
+
+math i += 1
+set KEY binary "155c703a508c1c8a"   # ???
+putarray 8 i KEY
+
+math i += 1
+set KEY binary "d9ef88157bcbcae0"   # Deponia french
+putarray 8 i KEY
+
+#math i += 1
+#set KEY binary "                "
+#putarray 8 i KEY
+
+math i += 1
+set KEY binary ""
+putarray 8 i KEY
+
+getdstring SIGN 4
+if SIGN == "VIS3"
+    get FILES long  # max 0x1869f?
+    if FILES u> 0x00ffffff # 0x1869f
+        endian big
+        reverselong FILES
+    endif
+    savepos BASE_OFF
+    math TMP = FILES
+    math TMP *= 16
+    math TMP += 6
+
+    # key scanner
+    math i = 0
+    do
+        getarray KEY 8 i
+        if KEY == ""
+            print "unknown Visionaire key, contact me"
+            cleanexit
+        endif
+        encryption xor KEY
+        log MEMORY_FILE BASE_OFF 3
+        encryption "" ""
+        getdstring SIGN 3 MEMORY_FILE
+        math i += 1
+    while SIGN != "HDR"
+    print "use key %KEY%"
+
+    encryption xor KEY
+    log MEMORY_FILE BASE_OFF TMP
+    encryption "" ""
+    if quickbms_arg1 == "DUMP"
+        log "visionaire_dump.dat" 0 TMP MEMORY_FILE
+        cleanexit
+    endif
+    math BASE_OFF += TMP
+
+    math LAME_VIS   = 0 # Deponia
+    math OLD_OFFSET = 0
+    math OLD_ZSIZE  = 0
+
+    getdstring SIGN 3 MEMORY_FILE
+    for i = 0 < FILES
+        encryption "" ""
+        get OFFSET long MEMORY_FILE
+        get ZSIZE long MEMORY_FILE
+        get SIZE long MEMORY_FILE
+        get TYPE long MEMORY_FILE
+        if i == 1
+            if TYPE > 0xffff
+                math LAME_VIS = 1
+            endif
+        endif
+        if LAME_VIS != 0
+            callfunction LAME_VIS_FIX 1
+        endif
+        math OFFSET += BASE_OFF
+        set NAME long i
+        string NAME += "."
+        string NAME += TYPE
+        #if TYPE == 0
+        #    string NAME += ".ogv"
+        #elif TYPE == 3
+        #    string NAME += ".xml"
+        #elif TYPE == 8
+        #    string NAME += ".png"
+        #else
+        #    string NAME += ".dat"
+        #endif
+        set NAME string ""
+        if TYPE & 2
+            encryption xor KEY
+        endif
+        if SIZE == ZSIZE
+            log NAME OFFSET SIZE
+        else
+            clog NAME OFFSET ZSIZE SIZE
+        endif
+    next i
+else
+    goto 0
+    getdstring SIGN 3
+    goto 0  # reset, useful
+    if SIGN != "VIS"
+        # if you have only one big executable you must first dump
+        # everything from the first occurrence of the bytes d1 b5 d1
+        # update: no longer necessary because I do it here!
+        math VIS_OFFSET = 0
+        get EXT extension
+        if EXT == "exe"
+            findloc VIS_OFFSET string "\xd1\xb5\xd1"
+            goto VIS_OFFSET
+            print "- VIS file possible offset %VIS_OFFSET|x%"
+        endif
+
+        set PASSWD string "PASSWD"  # original of "\x7b\x6c\x7e\x7e\x82\x6f"
+        strlen TMP PASSWD
+        for i = 0 < TMP
+            getvarchr BYTE PASSWD i
+            math BYTE += 0x2b
+            math BYTE n= BYTE   # needed for Encryption
+            putvarchr PASSWD i BYTE
+        next i
+        encryption rot PASSWD "" "" TMP
+    endif
+    get SIZE asize  # yeah, lame way but it's the only one here
+    math SIZE -= VIS_OFFSET
+    math SIZE /= 4  # because it's necessary a one-byte function
+    log MEMORY_FILE VIS_OFFSET SIZE
+    encryption "" ""
+    idstring MEMORY_FILE "VIS"
+    get FILES long MEMORY_FILE
+    for EXTRACT = 0 < 2
+        goto 7 MEMORY_FILE
+        for i = 0 < FILES
+            get NAMESZ byte MEMORY_FILE
+            getdstring NAME NAMESZ MEMORY_FILE
+            get OFFSET long MEMORY_FILE
+            get SIZE long MEMORY_FILE
+            if EXTRACT != 0
+                math OFFSET += BASE_OFF
+                math OFFSET += VIS_OFFSET
+                log NAME OFFSET SIZE
+            endif
+        next i
+        savepos BASE_OFF MEMORY_FILE
+    next EXTRACT
+endif
+
+startfunction LAME_VIS_FIX
+    if i <= 4
+        math TYPE = 0
+    elif i <= 8
+        math OFFSET = OLD_OFFSET
+        math OFFSET += OLD_ZSIZE
+    else
+        math ZSIZE &= 0x00ffffff
+        math LAME_VIS = 0   # reset
+    endif
+    math OLD_OFFSET = OFFSET
+    math OLD_ZSIZE  = ZSIZE
+endfunction

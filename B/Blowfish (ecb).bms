@@ -1,0 +1,6 @@
+# Blowfish (ecb) decryption
+# script for QuickBMS http://quickbms.aluigi.org
+
+encryption blowfish "mykey"
+get SIZE asize
+log "decrypted_file.dat" 0 SIZE

@@ -1,0 +1,32 @@
+# Vector
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzma86head
+idstring "DTRZ"
+get FILES short
+getdstring DUMMY 3
+for i = 0 < FILES
+    get NAME string
+    putarray 0 i NAME
+next i
+get DUMMY long
+for i = 0 < FILES
+    get DUMMY short # -1
+    get LAST short  # ???
+    get ID short
+next i
+for i = 0 < FILES
+    get OFFSET long
+    get ZSIZE long
+    get SIZE long
+    get FLAG long
+    getarray NAME 0 i
+
+    # SIZE and ZSIZE are the same but the file is compressed
+    # so an easy way to have ZSIZE is using the whole dz archive
+    # or alternatively reading the next entry and subtract the offset
+    get ZSIZE asize
+    math ZSIZE -= OFFSET
+
+    clog NAME OFFSET ZSIZE SIZE
+next i

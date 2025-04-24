@@ -1,0 +1,46 @@
+# Blitz Games
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver "0.6"
+
+get DUMMY long  # 0x4cb6232c
+get ALIGN long
+endian guess ALIGN
+get ZERO long
+get FILES long
+get INFO_OFF long
+get TEXRACTR_OFF long
+get ZERO long
+get DUMMY long
+get OFFSET3 long
+get DUMMY long
+get NAMES_OFF long
+get NAMES_SIZE long
+
+math INFO_OFF *= ALIGN
+math TEXRACTR_OFF *= ALIGN
+math OFFSET3 *= ALIGN
+math NAMES_OFF *= ALIGN
+
+log MEMORY_FILE NAMES_OFF NAMES_SIZE
+
+goto INFO_OFF
+for i = 0 < FILES
+    get OFFSET long
+    get DUMMY long
+    get SIZE long
+    get NAME_OFF long
+    get IS_FILE long
+    get ZERO long
+    get CRC longlong
+
+    math OFFSET *= ALIGN
+    if NAME_OFF >= NAMES_SIZE
+        set NAME string ""
+    else
+        goto NAME_OFF MEMORY_FILE
+        get NAME string MEMORY_FILE
+    endif
+
+    log NAME OFFSET SIZE
+next i

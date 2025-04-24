@@ -1,0 +1,75 @@
+# Risen (script 0.2.1)
+# partially based on the documentation on http://www.bendlins.de/nico/gothic3/
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unzip_dynamic
+
+get Version long
+get Product long
+get Revision long
+get Encryption long
+get Compression long
+get Reserved long
+get OffsetToFiles long
+get OffsetToFiles64 long
+get OffsetToFolders long
+get OffsetToFolders64 long
+get OffsetToVolume long
+get OffsetToVolume64 long
+
+if Product != 0x30563347
+    cleanexit
+endif
+set FULLPATH string ""
+
+goto OffsetToFolders
+callfunction EXTRACT
+
+startfunction EXTRACT
+    get Attributes long
+    if Attributes == 0  # root
+        math Attributes = 0x10
+        set FileName string ""
+    else
+        get TMP long
+        math TMP += 1
+        getdstring FileName TMP
+    endif
+
+    if Attributes & 0x10
+        getdstring FileTime 24
+        get Attributes2 long
+        get FileCount long
+
+        string FULLPATH += FileName
+        string FULLPATH += \
+        for i = 0 < FileCount
+            callfunction EXTRACT
+        next i
+    else
+        get Offset long
+        get Offset64 long
+        getdstring FileTime 24
+        get Attributes2 long
+        get Encryption long
+        get Compression long
+        get ZSize long
+        get Size long
+
+        set FULLNAME string FULLPATH
+        string FULLNAME += FileName
+
+        if Attributes & 0x800
+            set Compression long 2
+        endif
+        if Attributes & 0x4000
+            print "this file seems to use encryption which is not supported at the moment, contact me"
+            #cleanexit
+        endif
+        if Compression == 0
+            log FULLNAME Offset Size
+        else
+            clog FULLNAME Offset ZSize Size
+        endif
+    endif
+endfunction

@@ -1,0 +1,52 @@
+# RezMgr
+#   this works exactly like rez.bms, this is a version written from scratch just for fun
+#   RezMgr Version 1 Copyright (C) 1995 MONOLITH INC.
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "\r\nRezMgr"
+goto 0x7f
+get DUMMY long
+get INFO_OFFSET long
+get INFO_SIZE long
+
+set NAME string ""
+set PATH string ""
+callfunction EXTRACT
+
+startfunction EXTRACT
+    string PATH += NAME
+    string PATH += /
+
+    goto INFO_OFFSET
+    math INFO_LIMIT = INFO_OFFSET
+    math INFO_LIMIT += INFO_SIZE
+
+    for INFO_TMP = INFO_OFFSET < INFO_LIMIT
+        get TYPE long
+        if TYPE == 0
+            get OFFSET long
+            get SIZE long
+            get DUMMY longlong
+            getdstring EXT 8
+            get NAME string
+            get FOLDER string # ???
+            encryption reverse ""
+            string EXT E= EXT
+            encryption "" ""
+            string NAME += "."
+            string NAME += EXT
+            set FNAME string PATH
+            string FNAME += NAME
+            log FNAME OFFSET SIZE
+        else
+            get INFO_OFFSET long
+            get INFO_SIZE long
+            get DUMMY long
+            get NAME string
+            savepos TMP
+            callfunction EXTRACT
+            goto TMP
+        endif
+        savepos INFO_TMP
+    next
+endfunction

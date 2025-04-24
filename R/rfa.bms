@@ -1,0 +1,55 @@
+# DICE Refractor2 engine
+#   Battlefield series
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype lzo1x
+getdstring SIGN 22
+if SIGN == "Refractor2 FlatArchive"
+    goto 28
+else
+    goto 0
+endif
+get OFFSET long
+goto OFFSET
+get FILES long
+
+for i = 0 < FILES
+    get NAMESZ long
+    getdstring NAME NAMESZ
+    get ZSIZE long
+    get SIZE long
+    get OFFSET long
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+
+    if SIZE == ZSIZE
+        log NAME OFFSET SIZE
+    else
+        callfunction UNPACK
+    endif
+next i
+
+startfunction UNPACK
+    log MEMORY_FILE OFFSET ZSIZE
+    get CHUNKS long MEMORY_FILE
+    math BASE_OFF = CHUNKS
+    math BASE_OFF *= 12
+    math BASE_OFF += 4
+    putvarchr MEMORY_FILE2 SIZE 0       # pre-allocate
+    log MEMORY_FILE2 0 0 MEMORY_FILE    # init
+    append
+    for j = 0 < CHUNKS
+        get CHUNK_ZSIZE long MEMORY_FILE
+        get CHUNK_SIZE long MEMORY_FILE
+        get CHUNK_OFFSET long MEMORY_FILE
+        math CHUNK_OFFSET += BASE_OFF
+        if CHUNK_ZSIZE == CHUNK_SIZE
+            log MEMORY_FILE2 CHUNK_OFFSET CHUNK_SIZE MEMORY_FILE
+        else
+            clog MEMORY_FILE2 CHUNK_OFFSET CHUNK_ZSIZE CHUNK_SIZE MEMORY_FILE
+        endif
+    next j
+    append
+    log NAME 0 SIZE MEMORY_FILE2
+endfunction

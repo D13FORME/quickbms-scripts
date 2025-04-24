@@ -1,0 +1,80 @@
+# Metro 2033 .upk packer part2 v1.2
+# (hrhhr@gmail.com 03-2010)
+# script for QuickBMS http://aluigi.org/papers.htm#quickbms
+
+startfunction math_size_unp
+	set pos long 0
+	set size_unp long 0
+	do
+		goto pos 1
+		get prfx byte 1
+		math prfx -= 0x7d
+		if prfx > 0
+			get tmp1 long 1
+			get tmp2 long 1
+		else
+			get tmp1 byte 1
+			get tmp2 byte 1
+		endif
+		math pos += tmp1
+		math size_unp += tmp2
+	while pos < fsize
+endfunction
+
+# section 2
+log MEMORY_FILE 0 0
+put 1 long MEMORY_FILE
+put -1 long MEMORY_FILE
+
+set is_exit byte 0
+set offset long 8
+do
+	scandir ".\content" fname fsize
+	if fname != ""
+		open "." fname 1
+		get prfx byte 1
+		math size_unp = fsize
+		math size_pak = fsize
+		if prfx >= 0x7c
+			if prfx <= 0x7f
+				callfunction math_size_unp 1
+			endif
+		endif
+		set crc32 long 0
+		strlen len_fname fname
+
+		put crc32 long MEMORY_FILE
+		put offset long MEMORY_FILE
+		put size_unp long MEMORY_FILE
+		put size_pak long MEMORY_FILE
+		math len_fname += 1
+		put len_fname long MEMORY_FILE
+		math len_fname -= 1
+		math crc32 & 0xff
+		for i = 0 < len_fname
+			getvarchr tmp fname i
+			math tmp ^= crc32
+			putvarchr fname i tmp
+		next i
+		put fname string MEMORY_FILE
+		math offset += fsize
+	else
+		set is_exit byte 1
+	endif
+while is_exit < 1
+
+get size asize MEMORY_FILE
+math size -= 8
+putvarchr MEMORY_FILE 4 size long
+
+# section 3
+append #on
+set MEMORY_FILE binary "\x02\x00\x00\x00\x04\x00\x00\x00\x00\x00\x00\x00"
+# section 4
+set MEMORY_FILE binary "\x03\x00\x00\x00\x10\x00\x00\x00\x47\x55\x49\x44"
+set MEMORY_FILE binary "\x2D\x62\x79\x2D\x68\x68\x72\x68\x68\x72\x2D\x31"
+append #off
+get size asize MEMORY_FILE
+log "file3" 0 size MEMORY_FILE
+
+cleanexit

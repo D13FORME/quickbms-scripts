@@ -1,0 +1,13 @@
+# Gamehouse
+# script for QuickBMS http://quickbms.aluigi.org
+
+get SIZE long
+get DUMMY long
+get FILES long
+for i = 0 < FILES
+    get NAMESZ byte
+    getdstring NAME NAMESZ
+    get OFFSET long
+    get SIZE long
+    log NAME OFFSET SIZE
+next i

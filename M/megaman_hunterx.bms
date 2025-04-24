@@ -1,0 +1,12 @@
+comtype PUYO_LZ01
+for
+    findloc OFFSET string "CPK0"
+    goto OFFSET
+    idstring CPK0
+    get ZSIZE long
+    get SIZE long
+    get DUMMY long
+    savepos OFFSET
+    math ZSIZE -= 2
+    clog "" OFFSET ZSIZE SIZE
+next

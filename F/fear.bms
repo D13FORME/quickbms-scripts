@@ -1,0 +1,163 @@
+# FEAR / FEAR2 / ARCH00 archives (script 0.5a)
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver "0.5.14,-9" # -9 is necessary for this script
+
+comtype unzip_dynamic
+getdstring SIGN 4
+if SIGN == "LTAR"
+elif SIGN == "RATL"
+    set SIGN string "LTAR"
+    endian big
+elif SIGN == "LTAX"
+    comtype xmemdecompress
+elif SIGN == "XATL"
+    comtype xmemdecompress
+    set SIGN string "LTAX"
+    endian big
+else
+    cleanexit
+endif
+get VERSION long
+
+# it's possible to make the check on the version or using this solution
+savepos TMP
+get FULL_SIZE asize
+get DUMMY1 long
+get DUMMY2 long
+math AUTOGUESS = 0
+if DUMMY1 u> FULL_SIZE
+    math AUTOGUESS = 1
+endif
+if DUMMY2 u> FULL_SIZE
+    math AUTOGUESS = 1
+endif
+goto TMP
+if AUTOGUESS == 0
+    get NAMESSZ long
+    get FOLDERS long
+    get FILES long
+    get DUMMY long      # 1
+    get DUMMY long      # 0
+    get DUMMY long      # 0
+    getdstring HASH 16
+else
+    getdstring HASH 16
+    get DUMMY long      # 1
+    get DUMMY long      # 0
+    get DUMMY long      # 0
+    get FILES long
+    get FOLDERS long
+    get NAMESSZ long
+endif
+
+savepos OFFSET
+log MEMORY_FILE OFFSET NAMESSZ
+
+math OFFSET += NAMESSZ
+set FILESSZ long FILES
+math FILESSZ *= 32
+log MEMORY_FILE2 OFFSET FILESSZ
+
+math OFFSET += FILESSZ
+set FOLDERSSZ long FOLDERS
+math FOLDERSSZ *= 16
+log MEMORY_FILE3 OFFSET FOLDERSSZ
+
+set FOLDER string ""
+callfunction EXTRACT
+
+startfunction EXTRACT
+    savepos CURR_OFF MEMORY_FILE3
+    if CURR_OFF u>= FOLDERSSZ
+        cleanexit
+    endif
+    get NAME_OFF long MEMORY_FILE3
+    get SUB_FOLDERS long MEMORY_FILE3
+    get NEXT_FOLDERS long MEMORY_FILE3
+    get NUM_FILES long MEMORY_FILE3
+
+    goto NAME_OFF MEMORY_FILE
+    get NAME string MEMORY_FILE
+
+    # don't have the minimal idea if it's correct, it's an update of the old script
+    if AUTOGUESS == 0
+        string FOLDER = NAME
+    else
+        string FOLDER += NAME
+    endif
+    string FOLDER += /
+
+    for i = 0 < NUM_FILES
+        savepos CURR_OFF MEMORY_FILE2
+        if CURR_OFF u>= FILESSZ
+            cleanexit
+        endif
+        get NAME_OFF long MEMORY_FILE2
+        get OFFSET  longlong MEMORY_FILE2
+        get ZSIZE   longlong MEMORY_FILE2
+        get SIZE    longlong MEMORY_FILE2
+        get ZIP     long MEMORY_FILE2
+
+        goto NAME_OFF MEMORY_FILE
+        get NAME string MEMORY_FILE
+
+        if FOLDER != "CRC/" # they are not files
+            set FNAME string FOLDER
+            string FNAME += NAME
+            if ZIP == 0
+                log FNAME OFFSET SIZE
+            else
+                # compression 9, it's the same for both zlib and xmem
+                callfunction ZIP_DUMP 1 # 1 only for being faster
+            endif
+        endif
+    next i
+
+    for i = 0 < SUB_FOLDERS
+        callfunction EXTRACT
+    next i
+
+    set FOLDER string ""
+    for i = 0 < NEXT_FOLDERS
+        callfunction EXTRACT
+    next i
+endfunction
+
+startfunction ZIP_DUMP
+    putvarchr MEMORY_FILE4 SIZE 0
+    log MEMORY_FILE4 0 0
+    math LIMIT = OFFSET
+    math LIMIT += ZSIZE
+    append
+    for OFFSET = OFFSET u< LIMIT
+        goto OFFSET
+        padding 4
+        math CHUNK_PACKED = 1
+        get CHUNK_ZSIZE long
+        if SIGN == "LTAR"
+            get CHUNK_SIZE long
+            savepos OFFSET
+            if CHUNK_ZSIZE == CHUNK_SIZE
+                math CHUNK_PACKED = 0
+            endif
+        else    # "LTAX"
+            math CHUNK_SIZE = 0x10000
+            savepos OFFSET
+            if CHUNK_ZSIZE & 0x80000000 #0xf0000000
+                math CHUNK_PACKED = 0
+                math CHUNK_ZSIZE &= 0x0fffffff
+            endif
+        endif
+        if CHUNK_PACKED == 0
+            log MEMORY_FILE4 OFFSET CHUNK_ZSIZE
+        else
+            clog MEMORY_FILE4 OFFSET CHUNK_ZSIZE CHUNK_SIZE
+        endif
+        math OFFSET += CHUNK_ZSIZE
+        #math OFFSET x= 4
+    next
+    append
+    get SIZE asize MEMORY_FILE4
+    log FNAME 0 SIZE MEMORY_FILE4
+endfunction

@@ -1,0 +1,14 @@
+# AGameEngine
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "AGameEngine->PAK"
+get DUMMY long
+get FILES long
+goto 0x94
+for i = 0 < FILES
+    get NAMESZ long # ???
+    get CRC long
+    get OFFSET long
+    get SIZE long
+    log "" OFFSET SIZE
+next i

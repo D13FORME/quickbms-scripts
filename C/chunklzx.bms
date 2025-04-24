@@ -1,0 +1,72 @@
+# chunklzx / chunkzip (script 0.2.1a)
+# script for QuickBMS http://quickbms.aluigi.org
+
+get NAME basename
+get EXT extension
+string NAME += "_unpacked."
+string NAME += EXT
+
+endian big
+    getdstring chunk_type 8
+    if chunk_type == "chunklzx"
+        comtype xmemdecompress
+    elif chunk_type == "chunkzip"
+        comtype deflate
+    elif chunk_type == "chunlzma"
+        comtype lzma
+    elif chunk_type == "chunkref"
+        comtype copy # ???
+    else
+        print "unsupported type %chunk_type%"
+        cleanexit
+    endif
+    get DUMMY long
+    if DUMMY <= 2
+        get FULLSIZE long
+        set TYPE long 0     # Fight Night Champion and some FIFA11
+    else
+        math FULLSIZE = DUMMY
+        set TYPE long 1     # most FIFA11 files
+    endif
+    get SIZE long
+    if TYPE == 0
+        get CHUNKS long
+        get DUMMY long
+        get DUMMY long
+        get DUMMY long
+        get DUMMY long
+    else
+        math CHUNKS = FULLSIZE
+        math CHUNKS /= SIZE
+        if FULLSIZE % SIZE
+            math CHUNK += 1
+        endif
+    endif
+    log MEMORY_FILE 0 0
+    append
+    savepos OFFSET
+    do
+        if TYPE == 0
+            math OFFSET x= 0x8
+            for # very lame, made on the fly
+                math T = OFFSET
+                math T %= 0x10
+                if T == 8
+                    break
+                endif
+                math OFFSET += 8
+            next
+        endif
+        goto OFFSET
+
+        get ZSIZE long
+        if TYPE == 0
+            get DUMMY long
+        endif
+        savepos OFFSET
+        clog MEMORY_FILE OFFSET ZSIZE SIZE
+        math OFFSET += ZSIZE
+        get MYSIZE asize MEMORY_FILE
+    while MYSIZE < FULLSIZE
+    append
+    log NAME 0 FULLSIZE MEMORY_FILE

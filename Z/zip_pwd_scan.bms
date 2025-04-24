@@ -1,0 +1,99 @@
+# ZIP password scanner - zipcrypto (script 0.1)
+#   Not fast but it works
+# script for QuickBMS http://quickbms.aluigi.org
+
+# put the list of passwords in the following file!
+set PASSWORD_FILE string "passwords_list.txt"
+
+open FDSE PASSWORD_FILE 1 EXISTS
+if EXISTS == 0
+    open "." PASSWORD_FILE 1 EXISTS
+    if EXISTS == 0
+        print "Error: you must put the list of passwords in %PASSWORD_FILE%"
+        cleanexit
+    endif
+endif
+get PASSWORD_FILE_SIZE asize 1
+
+print "the error \"incomplete input file number 1\" means that no password was found"
+
+get zip_filesize asize
+for offset = 0 < zip_filesize
+    idstring "PK"
+    get SIGN short
+    if SIGN == 0x0403   # Local file header
+        get ver             short
+        get flag            short
+        get method          short
+        get modtime         short
+        get moddate         short
+        get zip_crc         long
+        get comp_size       long
+        get uncomp_size     long
+        get name_len        short
+        get extra_len       short
+        getdstring name     name_len
+        getdstring extra    extra_len
+        savepos offset
+
+        print "FILE: %name%"
+
+        if flag & 1         # encrypted
+        if method == 99
+            print "AES not supported, only zipcrypto. check next files..."
+        else
+        if uncomp_size != 0 # no folders
+            print "scanning in progress, please wait patiently..."
+
+            Log MEMORY_FILE2 offset comp_size   # load in memory
+
+            # set method
+            if method == 0
+                comtype copy
+            elif method == 8
+                ComType deflate_noerror   #deflate but it terminates
+            else
+                print "unsupported compression method %method%"
+                cleanexit
+            endif
+
+            for
+                get ZIP_PASSWORD line 1
+
+                encryption zipcrypto ZIP_PASSWORD 1
+
+                CLog MEMORY_FILE 0 comp_size uncomp_size MEMORY_FILE2
+
+                get SIZE asize MEMORY_FILE
+                if SIZE == uncomp_size
+                    encryption crc "0xedb88320  32 -1 -1 0 0 1"
+                    log MEMORY_FILE 0 uncomp_size MEMORY_FILE
+                    if zip_crc == QUICKBMS_CRC
+                        print "Password found:\n\n%ZIP_PASSWORD%"
+                        print "(hex visualization for debugging)\n%ZIP_PASSWORD|x%"
+                        cleanexit
+                    endif
+                endif
+
+            next
+
+            print "Error: no password found"
+            cleanexit
+        endif
+        endif
+        endif
+        math offset += comp_size
+        goto offset
+
+    elif sign == 0x0807     # Data Descriptor
+        get zip_crc         long
+        get comp_size       long
+        get uncomp_size     long
+
+    else
+        break   #cleanexit
+    endif
+    savepos offset
+next
+
+print "Error: no password found"

@@ -1,0 +1,74 @@
+# Devil May Cry 4 / Dead Rising 360 / Resident Evil 5 / Capcom ARC files (script 0.1.4)
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver 0.5.3
+set HFS long 0
+set BASE_OFF long 0
+
+get SIGN long
+if SIGN == 0x00534648   # " SFH"
+    endian big
+    set HFS long 1
+elif SIGN == 0x48465300 # "HFS "
+    endian little
+    set HFS long 1
+endif
+
+if HFS != 0
+    get DUMMY short
+    get TYPE short
+    if TYPE == 0
+        set BASE_OFF long 0x20000
+    else
+        set BASE_OFF long 0x10
+    endif
+    goto BASE_OFF
+    get SIGN long
+endif
+
+if SIGN == 0x00435241   # " CRA"
+    endian little
+elif SIGN == 0x41524300 # "ARC "
+    endian big
+else
+    cleanexit
+endif
+get VERSION short
+if VERSION == 4
+    comtype unzip_dynamic   #zlib
+elif VERSION == 8
+    comtype unzip_dynamic   #deflate
+elif VERSION == 0x11
+    comtype XMemDecompress 0x8000   # yeah 0x8000 is the "magic" for RE5
+else
+    comtype unzip_dynamic   #zlib
+    print "unknown version %VERSION%, I try zlib compression"
+endif
+get FILES short
+
+for i = 0 < FILES
+    getdstring NAME 0x40
+    get TYPE long
+    get ZSIZE long
+    get SIZE long
+    get OFFSET long
+
+    if SIZE & 0x40000000
+        math SIZE -= 0x40000000
+    endif
+
+    if HFS != 0 # used in RE5 PS3
+        math ZSIZE += 32
+        #math SIZE /= 8
+        math TMP = OFFSET
+        math TMP /= 0x20000
+        math TMP *= 0x10
+        math ZSIZE  += TMP
+        math SIZE   += TMP
+        math OFFSET += TMP
+        math OFFSET += 2
+    endif
+
+    math OFFSET += BASE_OFF # needed for HFS header
+    clog NAME OFFSET ZSIZE SIZE
+next i

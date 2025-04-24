@@ -1,0 +1,45 @@
+# Enigmatis: The Ghosts of Maple Creek *.cub file (script 0.2)
+# script for QuickBMS http://quickbms.aluigi.org
+
+filexor 0x96
+idstring "cub\0"
+get VER string
+get FILES long
+getdstring DUMMY 0x100
+if FILES == 0
+    get CUB_SIZE asize
+    savepos OFFSET
+    for OFFSET = OFFSET < CUB_SIZE
+        callfunction DUMP 1
+        math OFFSET += SIZE
+        goto OFFSET
+    next
+else
+    for i = 0 < FILES
+        callfunction DUMP 1
+    next i
+endif
+
+startfunction DUMP
+    getdstring NAME 0x100
+    get OFFSET long
+    get SIZE long
+
+    savepos TMP
+    goto OFFSET
+    get SIGN long
+    if SIGN == 0x12345678
+        get DUMMY long
+        get DUMMY long
+        get DUMMY long
+        get DUMMY short
+        get NUM long
+        math OLD_OFFSET = OFFSET
+        savepos OFFSET
+        xmath OFFSET "OFFSET + (NUM * 16)"
+        xmath SIZE "SIZE - (OFFSET - OLD_OFFSET)"
+    endif
+    goto TMP
+
+    log NAME OFFSET SIZE
+endfunction

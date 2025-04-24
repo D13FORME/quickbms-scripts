@@ -1,0 +1,25 @@
+# Darkeden (*.dpk)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype zlib_noerror
+get DPK_SIZE asize
+for OFFSET = 0x200 < DPK_SIZE
+    goto OFFSET
+    padding 0x200
+    savepos OFFSET
+    if OFFSET >= DPK_SIZE
+        cleanexit
+    endif
+    get SIZE long
+    get DUMMY byte
+    get DUMMY byte
+    get ZSIZE long
+    get NO_ZIP byte
+    savepos OFFSET
+    if NO_ZIP != 0
+        log "" OFFSET SIZE
+    else
+        clog "" OFFSET ZSIZE SIZE
+    endif
+    math OFFSET += ZSIZE
+next

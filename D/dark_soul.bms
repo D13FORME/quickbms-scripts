@@ -1,0 +1,73 @@
+# Dark Souls 1 (script 0.1.2)
+#   Tested with PS3 files.
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+
+open FDDE "bhd5"
+open FDDE "bdt" 1
+
+idstring "BHD5"
+get ZERO long
+get ONE long
+get BHD5_SIZE long
+get BHD5_FOLDERS long
+get DUMMY long
+for FOLDER = 0 < BHD5_FOLDERS
+    get BHD5_FILES long
+    get OFFSET long
+
+    savepos TMP
+    goto OFFSET
+    for FILE = 0 < BHD5_FILES
+        get NAME_CRC long
+        get SIZE long
+        get OFFSET longlong
+        string NAME p= "%d/" FOLDER
+
+        goto OFFSET 1
+        getdstring SIGN 3 1
+        if SIGN == "BHF"
+            callfunction DUMP_BHF_BDF 1
+        elif SIGN == "BDF"
+            # do nothing because it's already handled and extracted by DUMP_BHF_BDF
+        else
+            log NAME OFFSET SIZE 1
+        endif
+    next FILE
+    goto TMP
+next FOLDER
+
+# BHF and BDF
+startfunction DUMP_BHF_BDF
+    goto OFFSET 1
+    idstring 1 "BHF"
+    padding 0x10 1
+    get FILES long 1
+    padding 0x10 1
+    for i = 0 < FILES
+        get FLAGS long 1
+        get SIZE long 1
+        get OFFSET long 1
+        get NAME_IDX long 1
+        get DUMMY long 1
+        get XSIZE long 1
+        putarray 0 i OFFSET
+        putarray 1 i SIZE
+    next i
+    for i = 0 < FILES
+        get NAME string 1
+        putarray 2 i NAME
+    next i
+    padding 0x10 1
+    savepos BASE_OFF 1
+    idstring 1 "BDF"
+    for i = 0 < FILES
+        getarray OFFSET 0 i
+        getarray SIZE 1 i
+        getarray NAME 2 i
+        math OFFSET += BASE_OFF
+        string NAME p= "%d/%s" FOLDER NAME
+        log NAME OFFSET SIZE 1
+    next i
+endfunction

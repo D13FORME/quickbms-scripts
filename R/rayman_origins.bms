@@ -1,0 +1,27 @@
+# Rayman Origins (Xbox 360)
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+goto 0xc
+get BASE_OFF long
+goto 0x2c
+get FILES long
+goto 0x30
+for i = 0 < FILES
+    get DUMMY1 long
+    get SIZE long
+    get ZSIZE long
+    get TSTAMP longlong
+    get DUMMY3 long
+    get OFFSET long
+    get NAMESZ long
+    math NAMESZ *= 2
+    getdstring NAME NAMESZ
+    set NAME unicode NAME
+    math OFFSET += BASE_OFF
+    if ZSIZE == 0
+        log NAME OFFSET SIZE
+    else
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

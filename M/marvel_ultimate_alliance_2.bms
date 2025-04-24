@@ -1,0 +1,73 @@
+# THIS SCRIPT IS INCOMPLETE!!!
+# but it almost works :)
+
+# Basically the chunks are handled in some strange way
+# and for sure the method used in this script is wrong
+# for some files
+# Anyway many files are extracted correctly.
+# unzip_dynamic avoids to terminate quickbms.
+
+#comtype deflate
+comtype unzip_dynamic
+
+endian big
+idstring "\x1aAGI"
+get DUMMY long
+get DUMMY long
+get FILES long
+get DUMMY long
+get DUMMY long
+get NAMES_OFF long
+get DUMMY long
+get ZERO long
+get DUMMY long
+get DUMMY long
+get ZERO long
+for i = 0 < FILES
+    get CRC long
+next i
+for i = 0 < FILES
+    get OFFSET long
+    get SIZE long
+    get DUMMY long
+    putarray 0 i OFFSET
+    putarray 1 i SIZE
+    putarray 2 i DUMMY
+next i
+
+goto NAMES_OFF
+endian little
+for i = 0 < FILES
+    getarray OFFSET 0 i
+    getarray SIZE   1 i
+    getarray DUMMY  2 i
+
+    get NAME_OFF long
+    savepos TMP
+    math NAME_OFF += NAMES_OFF
+    goto NAME_OFF
+    get NAME string
+
+    putvarchr MEMORY_FILE SIZE 0
+    log MEMORY_FILE 0 0
+    append
+    for MYSIZE = 0 < SIZE
+        goto OFFSET
+        get ZSIZE short
+        savepos OFFSET
+        reverseshort ZSIZE
+        if ZSIZE < 0x8000
+            clog MEMORY_FILE OFFSET ZSIZE 0x8000
+        else
+            log MEMORY_FILE OFFSET ZSIZE
+        endif
+        math OFFSET += ZSIZE
+        math OFFSET x= 0x800
+        get MYSIZE asize MEMORY_FILE
+    next
+    append
+
+    log NAME 0 SIZE MEMORY_FILE
+
+    goto TMP
+next i

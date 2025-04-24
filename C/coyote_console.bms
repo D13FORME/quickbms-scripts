@@ -1,0 +1,22 @@
+# Coyote Console
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype deflate
+idstring "PDA\0"
+get VER long
+get INFO_OFF long
+get FILES long
+goto INFO_OFF
+for i = 0 < FILES
+    get DUMMY longlong
+    get ZSIZE long
+    get SIZE long
+    get NAMESZ short
+    get DUMMY short
+    get OFFSET long
+    getdstring NAME NAMESZ
+
+    math OFFSET += 0x10
+    math ZSIZE  -= 0x10
+    clog NAME OFFSET ZSIZE SIZE
+next i

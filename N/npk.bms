@@ -1,0 +1,16 @@
+# NPK
+#   no filenames decryption or support for encrypted files
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "NPK"
+get DUMMY byte
+get DUMMY long
+get FILES long
+for i = 0 < FILES
+    get NAMESZ short
+    getdstring NAME NAMESZ
+    get OFFSET long
+    get ZSIZE long
+    get SIZE long
+    clog "" OFFSET ZSIZE SIZE
+next i

@@ -1,0 +1,72 @@
+# Stacking
+# script for QuickBMS http://quickbms.aluigi.org
+
+open FDDE "~h" 0
+open FDDE "~p" 1
+
+endian big
+idstring "dfpf"
+get VER byte
+get DUMMY threebyte
+get DUMMY long
+get ALIGN long  # align?
+get DUMMY long
+get NAMES_OFF long
+get DUMMY long
+get NAMES_SIZE long
+get FILES long
+
+math INFO_SIZE = FILES
+math INFO_SIZE <<= 4
+math INFO_OFF = NAMES_OFF
+math INFO_OFF -= INFO_SIZE
+goto INFO_OFF
+
+for i = 0 < FILES
+    get SIZE threebyte
+    get DUMMY short
+    get ZSIZE threebyte
+    get OFFSET threebyte
+    get DUMMY byte
+    get NAMEX threebyte
+    get ZIP byte
+
+    savepos INFO_OFF
+    if VER < 5
+        math NAMEX >>= 3
+        math NAMEX += NAMES_OFF
+        goto NAMEX
+        get NAME string
+    else
+        goto NAMES_OFF
+        get NAME string
+        savepos NAMES_OFF
+    endif
+    goto INFO_OFF
+
+    if ZIP & 2
+        comtype XMemDecompress
+    else
+        comtype zlib
+    endif
+
+    if SIZE & 0x800000
+        math SIZE -= 0x800000
+    endif
+    if ZSIZE & 0x800000
+        math ZSIZE -= 0x800000
+    endif
+
+    #math SIZE >>= 1
+    math ZSIZE >>= 1
+    math ZSIZE &= 0x3ffff   # ???
+    math OFFSET <<= 5
+    if ZSIZE == 0
+        log NAME OFFSET SIZE 1
+    elif SIZE == ZSIZE
+        log NAME OFFSET SIZE 1
+    else
+        clog NAME OFFSET ZSIZE SIZE 1
+    endif
+    math OFFSET += ZSIZE
+next i

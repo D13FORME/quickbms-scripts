@@ -1,0 +1,28 @@
+# AWB AFS2 (script 0.1.2)
+#   thanks to Taylor&Lion for the alignment field
+# script for QuickBMS http://quickbms.aluigi.org
+
+idstring "AFS2"
+get DUMMY long
+get FILES long
+get MYALIGN long
+for i = 0 < FILES
+    get ALIGN short
+    putarray 0 i ALIGN
+next i
+
+    get OFFSET long
+for i = 0 < FILES
+    get NEXT_OFFSET long
+    if MYALIGN != 0
+        math ALIGN = MYALIGN
+    else
+        getarray ALIGN 0 i
+    endif
+    math OFFSET x= ALIGN
+    math SIZE = NEXT_OFFSET
+    math SIZE -= OFFSET
+    log "" OFFSET SIZE
+    math OFFSET = NEXT_OFFSET
+next i
+

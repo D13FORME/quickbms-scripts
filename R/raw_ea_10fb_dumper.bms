@@ -1,0 +1,33 @@
+# lame raw Fifa Online 3 compressed files dumper
+# the header of the big file is simply xored with a variable sequence of "|Pnm|Pnm !" string
+
+comtype dk2
+findloc OFFSET string "\x00\x10\xfb"	# \x00 because it's aligned and limits false positives
+math OFFSET += 1
+do
+    goto OFFSET
+	get DUMMY byte # avoid to get the same OFFSET
+	for
+		findloc NEXT_OFFSET string "\x00\x10\xfb" 0 ""
+		if NEXT_OFFSET == ""
+			break
+		endif
+		math NEXT_OFFSET += 1
+		if NEXT_OFFSET & 0xf
+			goto NEXT_OFFSET
+		else
+			break
+		endif
+	next
+    if NEXT_OFFSET == ""
+        get SIZE asize
+    else
+        math SIZE = NEXT_OFFSET
+    endif
+    math SIZE -= OFFSET
+	math ZSIZE = SIZE
+	getdstring SIGN 2
+	get SIZE threebyte
+    clog "" OFFSET ZSIZE SIZE
+    math OFFSET = NEXT_OFFSET
+while NEXT_OFFSET != ""

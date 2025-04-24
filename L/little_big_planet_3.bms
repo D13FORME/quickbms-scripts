@@ -1,0 +1,27 @@
+# Little Big Planet 3 (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+goto -8
+savepos OFFSET
+get FILES long
+idstring "FAR"
+get TYPE byte
+xmath TMP "OFFSET - (FILES * 0x1c)"
+goto TMP
+for i = 0 < FILES
+    if TYPE == '4'
+        get OFFSET long
+        get SIZE long
+        getdstring DUMMY 0x14
+    elif TYPE == 'C'
+        get NAME_CRC long
+        getdstring DUMMY 0x10
+        get OFFSET long
+        get SIZE long
+    else
+        print "Error: unknown FARC type %TYPE%"
+        cleanexit
+    endif
+    log "" OFFSET SIZE
+next i

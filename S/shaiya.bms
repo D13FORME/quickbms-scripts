@@ -1,0 +1,256 @@
+get EXTENSION extension
+if EXTENSION != SAF
+    open FDDE SAF
+endif
+open FDDE SAH 1
+
+idstring 1 "SAH\0"
+
+goto 0x38 1
+get FILES long 1
+for i = 0 < FILES
+    get NAMESZ long 1
+    getdstring NAME NAMESZ 1
+    get OFFSET long 1
+    get SERO long 1
+    get SIZE long 1
+    get TIMESTAMP long 1
+    log NAME OFFSET SIZE
+next i
+get FOLDERS1 long 1
+
+for i1 = 0 < FOLDERS1
+    get FOLDERSZ long 1
+    getdstring FOLDER1 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS2 long 1
+
+for i2 = 0 < FOLDERS2
+    get FOLDERSZ long 1
+    getdstring FOLDER2 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS3 long 1
+
+for i3 = 0 < FOLDERS3
+    get FOLDERSZ long 1
+    getdstring FOLDER3 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS4 long 1
+
+for i4 = 0 < FOLDERS4
+    get FOLDERSZ long 1
+    getdstring FOLDER4 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += FOLDER4
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS5 long 1
+
+for i5 = 0 < FOLDERS5
+    get FOLDERSZ long 1
+    getdstring FOLDER5 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += FOLDER4
+        string FULLNAME += \
+        string FULLNAME += FOLDER5
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS6 long 1
+
+for i6 = 0 < FOLDERS6
+    get FOLDERSZ long 1
+    getdstring FOLDER6 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += FOLDER4
+        string FULLNAME += \
+        string FULLNAME += FOLDER5
+        string FULLNAME += \
+        string FULLNAME += FOLDER6
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS7 long 1
+
+for i7 = 0 < FOLDERS7
+    get FOLDERSZ long 1
+    getdstring FOLDER7 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += FOLDER4
+        string FULLNAME += \
+        string FULLNAME += FOLDER5
+        string FULLNAME += \
+        string FULLNAME += FOLDER6
+        string FULLNAME += \
+        string FULLNAME += FOLDER7
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS8 long 1
+
+for i8 = 0 < FOLDERS8
+    get FOLDERSZ long 1
+    getdstring FOLDER8 FOLDERSZ 1
+    get FILES long 1
+    for j = 0 < FILES
+        get NAMESZ long 1
+        getdstring NAME NAMESZ 1
+        get OFFSET long 1
+        get SERO long 1
+        get SIZE long 1
+        get TIMESTAMP long 1
+
+        set FULLNAME string FOLDER1
+        string FULLNAME += \
+        string FULLNAME += FOLDER2
+        string FULLNAME += \
+        string FULLNAME += FOLDER3
+        string FULLNAME += \
+        string FULLNAME += FOLDER4
+        string FULLNAME += \
+        string FULLNAME += FOLDER5
+        string FULLNAME += \
+        string FULLNAME += FOLDER6
+        string FULLNAME += \
+        string FULLNAME += FOLDER7
+        string FULLNAME += \
+        string FULLNAME += FOLDER8
+        string FULLNAME += \
+        string FULLNAME += NAME
+        log FULLNAME OFFSET SIZE
+    next j
+    get FOLDERS8 long 1
+next i8
+
+next i7
+
+next i6
+
+next i5
+
+next i4
+
+next i3
+
+next i2
+
+next i1
+
+# not used, I guess they are files which have not been implemented in SAF
+#get FILES long 1
+#for i = 0 < FILES
+#    get NAMESZ long 1
+#    getdstring NAME NAMESZ 1
+#    get DUMMY long 1
+#    get DUMMY long 1
+#    get DUMMY long 1
+#    get DUMMY long 1
+#    log NAME OFFSET SIZE
+#next i
+#get FOLDERS1 long 1

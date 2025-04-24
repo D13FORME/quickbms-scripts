@@ -1,0 +1,72 @@
+# Strider (script 0.2a)
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+idstring "DHCS"
+get DUMMY long
+get PAK_XSIZE longlong
+get FILES long
+savepos OFFSET
+get PAK_SIZE asize
+math TMP = FILES
+math TMP *= 0x10
+math PAK_SIZE -= TMP
+goto PAK_SIZE
+math PAK_SIZE -= OFFSET
+clog MEMORY_FILE OFFSET PAK_SIZE PAK_XSIZE 
+
+# new version, thanks to swuforce
+
+    # there is no other way to know the location of the information
+    get NAME_CRC longlong   # ???
+    get OFFSET1 longlong
+    if FILES > 1
+        get NAME_CRC longlong   # ???
+        get OFFSET2 longlong
+    else
+        math OFFSET2 = PAK_XSIZE
+    endif
+    math FIRST_FILE_SIZE = OFFSET2
+    math FIRST_FILE_SIZE -= OFFSET1
+
+idstring MEMORY_FILE "PAK_"
+get DUMMY long MEMORY_FILE
+math DUMMY2 = DUMMY
+reverselong DUMMY2
+if DUMMY u>= DUMMY2
+    endian little
+endif
+get DUMMY long MEMORY_FILE
+get DUMMY long MEMORY_FILE
+get FILES long MEMORY_FILE
+xmath TMP "FIRST_FILE_SIZE - (FILES * 0x106)"
+goto TMP MEMORY_FILE
+for i = 0 < FILES
+    getdstring NAME 0xf0 MEMORY_FILE
+    get DUMMY short MEMORY_FILE
+    get DUMMY short MEMORY_FILE
+    get OFFSET longlong MEMORY_FILE
+    get SIZE long MEMORY_FILE
+    get DUMMY short MEMORY_FILE
+    get DUMMY short MEMORY_FILE
+    get DUMMY short MEMORY_FILE
+    log NAME OFFSET SIZE MEMORY_FILE
+next i
+
+cleanexit
+# old version
+
+    get NAME_CRC longlong   # ???
+    get OFFSET longlong
+for i = 1 <= FILES
+    if i == FILES
+        math SIZE = PAK_XSIZE
+    else
+        get NEXT_NAME_CRC longlong   # ???
+        get NEXT_OFFSET longlong
+        math SIZE = NEXT_OFFSET
+    endif
+    math SIZE -= OFFSET
+    log "" OFFSET SIZE MEMORY_FILE
+    math OFFSET = NEXT_OFFSET
+next i

@@ -1,0 +1,42 @@
+# jARC
+# script for QuickBMS http://quickbms.aluigi.org
+
+endian big
+idstring "jARC"
+get ACE_SIZE long
+get DUMMY long
+get FILES long
+
+#callfunction SCANNER 1
+
+for i = 0 < FILES
+    get OFFSET long
+    get SIZE long
+    get NAME_OFF long
+    get DUMMY long
+    get ZERO long
+
+    savepos TMP
+    goto NAME_OFF
+    get NAME string
+    goto TMP
+
+    log NAME OFFSET SIZE
+next i
+
+
+# scanner that tries to dump all the j* fields
+startfunction SCANNER
+    get OFFSET long
+    math i = 0
+    for OFFSET = OFFSET < ACE_SIZE
+        goto OFFSET
+        getdstring SIGN 4
+        get SIZE long
+        string NAME p= "%08x.%s" i SIGN
+        xmath TMP "SIZE - 8"
+        log NAME OFFSET TMP
+        math OFFSET += SIZE
+    next i
+    cleanexit # necessary to quit
+endfunction

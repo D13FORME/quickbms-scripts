@@ -1,0 +1,23 @@
+# Corum Online
+# script for QuickBMS http://quickbms.aluigi.org
+
+get PATH basename
+string PATH += /
+get DUMMY long
+get FILES long
+goto 0x5c
+for i = 0 < FILES
+    get XSIZE long
+    get SIZE long
+    get NAMESZ long
+    math NAMESZ += 1
+    get XOFFSET long
+    getdstring DUMMY 0x10
+    getdstring NAME NAMESZ
+    savepos OFFSET
+    set FNAME string PATH
+    string FNAME += NAME
+    log FNAME OFFSET SIZE
+    math OFFSET += SIZE
+    goto OFFSET
+next i

@@ -1,0 +1,34 @@
+# DreamKiller (script 0.1.1)
+# script for QuickBMS http://quickbms.aluigi.org
+
+comtype unmeng
+idstring MENG
+get DUMMY long
+idstring PACK
+goto 0x28
+get FILES long
+get INFO_OFF long
+goto INFO_OFF
+for i = 0 < FILES
+    get DUMMY long
+    getdstring NAME 4  # CODE,TEXT,MESH,...
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    get DUMMY long
+    get SIZE long
+    get ZSIZE long
+    get OFFSET long
+
+    string NAME += /
+    string NAME += i
+    string NAME += ".dat"
+
+    if SIZE == ZSIZE
+        log NAME OFFSET SIZE
+    else
+        math OFFSET += 4    # skip the crc
+        math ZSIZE  -= 4
+        clog NAME OFFSET ZSIZE SIZE
+    endif
+next i

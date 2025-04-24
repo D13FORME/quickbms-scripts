@@ -1,0 +1,34 @@
+# Futuremark (script 0.2.1)
+#   3DMark (all versions like 11, Vantage and so on)
+#   Shattered Horizon
+# script for QuickBMS http://quickbms.aluigi.org
+
+quickbmsver "0.5.17"
+
+get SIZE asize
+filexor 0xad
+encryption rotate 4
+filecrypt 1
+
+idstring "CRAE"
+get FILEVER long
+get FILES variable4 # previously it was variable3 which was wrong
+
+savepos START_OFF
+for EXTRACT = 0 < 2
+    for i = 0 < FILES
+        get NAMESZ variable4
+        getdstring NAME NAMESZ
+        get SIZE long
+        if EXTRACT != 0
+            filecrypt ""    # bypass a QuickBMS bug
+            log NAME OFFSET SIZE
+            filecrypt 1
+            math OFFSET += SIZE
+        endif
+    next i
+    if EXTRACT == 0
+        savepos OFFSET
+        goto START_OFF
+    endif
+next EXTRACT

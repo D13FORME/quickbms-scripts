@@ -1,0 +1,35 @@
+goto 0x20
+get FILES long
+goto 0x114
+get TYPE string
+if TYPE == "bnk"
+    goto 0x198
+    set NAME string ""
+    for i = 0 < FILES
+        get OFFSET threebyte
+        get BASE_NAMESZ byte
+        get NAMESZ byte
+        get DUMMY short
+        get SIZE long
+        getdstring TMP NAMESZ
+        math OFFSET *= 0x800
+        putvarchr NAME BASE_NAMESZ 0
+        string NAME += TMP
+        string NAME -= 1
+        log NAME OFFSET SIZE
+    next i
+elif TYPE == "mus"
+    goto 0x20c
+    for i = 0 < FILES
+        get SIZE long
+        get OFFSET long
+        if OFFSET != 0
+            math OFFSET *= 0x800
+            log "" OFFSET SIZE
+            math i += 1
+        endif
+    next
+else
+    print "Error: unsupported type %TYPE%, contact me"
+    cleanexit
+endif

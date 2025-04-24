@@ -1,0 +1,21 @@
+comtype gzip
+idstring "EZBIND\0\0"
+get FILES long
+get DUMMY long
+for i = 0 < FILES
+    get NAME_OFF long
+    get SIZE long
+    get OFFSET long
+    get CRC long
+
+    savepos TMP
+    goto NAME_OFF
+    get FNAME string
+    goto TMP
+
+    get NAME basename
+    string NAME += /
+    string NAME += FNAME
+
+    clog NAME OFFSET SIZE SIZE
+next i

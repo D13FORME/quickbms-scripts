@@ -1,0 +1,255 @@
+# PE executable file parsing example (script 0.2)
+# script for QuickBMS http://quickbms.aluigi.org
+
+print "This script dumps all the sections of the PE file, use -V to view all the PE fields for debugging"
+
+callfunction PARSE_EXE 1
+
+# RVA example
+#math OFFSET = 0x1234
+#print "File Offset       %OFFSET|x%"
+#callfunction file2rva 1
+#print "Virtual Address   %OFFSET|x%"
+#callfunction rva2file 1
+#print "File Offset       %OFFSET|x%"
+#example
+
+getarray resource_address 10 2
+log MEMORY_FILE10 0 0
+
+math MAX = 0
+for x = 0 < NumberOfSections
+    getarray VirtualAddress 0 x
+    getarray VirtualSize 1 x
+    getarray PointerToRawData 2 x
+    getarray SizeOfRawData 3 x
+    getarray Name 4 x
+
+    string NAME p= "%08x_%08x_%08x_%s.dat" VirtualAddress PointerToRawData SizeOfRawData Name
+    log NAME PointerToRawData SizeOfRawData
+
+    if VirtualAddress == resource_address
+        log MEMORY_FILE10 PointerToRawData SizeOfRawData
+    endif
+
+    xmath TMP "PointerToRawData + SizeOfRawData"
+    if TMP u> MAX
+        math MAX = TMP
+    endif
+next x
+
+get SIZE asize
+math SIZE -= MAX
+string NAME p= "LASTDATA_%08x_%08x.dat" MAX SIZE
+log NAME MAX SIZE
+
+get SIZE asize MEMORY_FILE10
+if SIZE > 0
+    callfunction LAME_PARSE_RESOURCES
+endif
+
+
+
+startfunction PARSE_EXE
+    get memsize asize
+    goto 0
+
+    #typedef struct _IMAGE_DOS_HEADER {
+	WORD e_magic;
+	WORD e_cblp;
+	WORD e_cp;
+	WORD e_crlc;
+	WORD e_cparhdr;
+	WORD e_minalloc;
+	WORD e_maxalloc;
+	WORD e_ss;
+	WORD e_sp;
+	WORD e_csum;
+	WORD e_ip;
+	WORD e_cs;
+	WORD e_lfarlc;
+	WORD e_ovno;
+	WORD e_res[4];
+	WORD e_oemid;
+	WORD e_oeminfo;
+	WORD e_res2[10];
+	LONG e_lfanew;
+
+    if e_lfanew != 0
+        goto e_lfanew
+    endif
+
+    DWORD Signature;
+
+    #typedef struct _IMAGE_FILE_HEADER {
+	WORD Machine;
+	WORD NumberOfSections;
+	DWORD TimeDateStamp;
+	DWORD PointerToSymbolTable;
+	DWORD NumberOfSymbols;
+	WORD SizeOfOptionalHeader;
+	WORD Characteristics;
+
+    #typedef struct _IMAGE_OPTIONAL_HEADER {
+	WORD Magic;
+	BYTE MajorLinkerVersion;
+	BYTE MinorLinkerVersion;
+	DWORD SizeOfCode;
+	DWORD SizeOfInitializedData;
+	DWORD SizeOfUninitializedData;
+	DWORD AddressOfEntryPoint;
+	DWORD BaseOfCode;
+	DWORD BaseOfData;
+	DWORD ImageBase;
+	DWORD SectionAlignment;
+	DWORD FileAlignment;
+	WORD MajorOperatingSystemVersion;
+	WORD MinorOperatingSystemVersion;
+	WORD MajorImageVersion;
+	WORD MinorImageVersion;
+	WORD MajorSubsystemVersion;
+	WORD MinorSubsystemVersion;
+	DWORD Win32VersionValue;
+	DWORD SizeOfImage;
+	DWORD SizeOfHeaders;
+	DWORD CheckSum;
+	WORD Subsystem;
+	WORD DllCharacteristics;
+	DWORD SizeOfStackReserve;
+	DWORD SizeOfStackCommit;
+	DWORD SizeOfHeapReserve;
+	DWORD SizeOfHeapCommit;
+	DWORD LoaderFlags;
+	DWORD NumberOfRvaAndSizes;
+    math IMAGE_NUMBEROF_DIRECTORY_ENTRIES = 16
+    for x = 0 < IMAGE_NUMBEROF_DIRECTORY_ENTRIES
+        DWORD VirtualAddress;
+        DWORD Size;
+        putarray 10 x VirtualAddress
+    next x
+
+    for x = 0 < NumberOfSections
+        BYTE Name[8];
+        DWORD VirtualSize;
+        DWORD VirtualAddress;
+        DWORD SizeOfRawData;
+        DWORD PointerToRawData;
+        DWORD PointerToRelocations;
+        DWORD PointerToLinenumbers;
+        WORD NumberOfRelocations;
+        WORD NumberOfLinenumbers;
+        DWORD Characteristics;
+
+        putarray 0 x VirtualAddress
+        if VirtualSize == 0
+            math VirtualSize = SizeOfRawData
+        endif
+        putarray 1 x VirtualSize
+        putarray 2 x PointerToRawData
+        putarray 3 x SizeOfRawData
+        putarray 4 x Name
+    next x
+endfunction
+
+startfunction file2rva
+    math RET = -1
+    math DIFF = -1
+    for x = 0 < NumberOfSections
+        getarray VirtualAddress 0 x
+        getarray VirtualSize 1 x
+        getarray PointerToRawData 2 x
+        getarray SizeOfRawData 3 x
+
+        set VirtualAddress long VirtualAddress
+        set VirtualSize long VirtualSize
+        set PointerToRawData long PointerToRawData
+        set SizeOfRawData long SizeOfRawData
+
+        if OFFSET u>= PointerToRawData
+            math TMP = PointerToRawData
+            math TMP += SizeOfRawData
+            if OFFSET u< TMP
+                math TMP = OFFSET
+                math TMP -= PointerToRawData
+                if TMP u< diff
+                    math diff = TMP
+                    math RET = x
+                endif
+            endif
+        endif
+    next x
+    math OFFSET += ImageBase
+    if RET >= 0
+        getarray VirtualAddress 0 RET
+        getarray PointerToRawData 2 RET
+
+        set VirtualAddress long VirtualAddress
+        set PointerToRawData long PointerToRawData
+
+        math OFFSET += VirtualAddress
+        math OFFSET -= PointerToRawData
+    endif
+endfunction
+
+startfunction rva2file
+    math OFFSET -= ImageBase
+    math RET = -1
+    math DIFF = -1
+    for x = 0 < NumberOfSections
+        getarray VirtualAddress 0 x
+        getarray VirtualSize 1 x
+        getarray PointerToRawData 2 x
+        getarray SizeOfRawData 3 x
+
+        set VirtualAddress long VirtualAddress
+        set VirtualSize long VirtualSize
+        set PointerToRawData long PointerToRawData
+        set SizeOfRawData long SizeOfRawData
+
+        if OFFSET u>= VirtualAddress
+            math TMP = VirtualAddress
+            math TMP += VirtualSize
+            if OFFSET u< TMP
+                math TMP = OFFSET
+                math TMP -= VirtualAddress
+                if TMP u< diff
+                    math diff = TMP
+                    math RET = x
+                endif
+            endif
+        endif
+    next x
+    if RET >= 0
+        getarray VirtualAddress 0 RET
+        getarray PointerToRawData 2 RET
+
+        set VirtualAddress long VirtualAddress
+        set PointerToRawData long PointerToRawData
+
+        math OFFSET += PointerToRawData
+        math OFFSET -= VirtualAddress
+    endif
+endfunction
+
+startfunction LAME_PARSE_RESOURCES
+    getdstring DUMMY 0xe MEMORY_FILE10
+    get ENTRIES short MEMORY_FILE10
+    for i = 0 < ENTRIES
+        get DUMMY long MEMORY_FILE10
+        get OFFSET long MEMORY_FILE10
+        savepos TMP MEMORY_FILE10
+        if OFFSET & 0x80000000
+            math OFFSET &= 0x7fffffff
+            goto OFFSET MEMORY_FILE10
+            callfunction LAME_PARSE_RESOURCES
+        else
+            goto OFFSET MEMORY_FILE10
+            get OFFSET long MEMORY_FILE10
+            get SIZE long MEMORY_FILE10
+            math OFFSET += ImageBase
+            callfunction rva2file 1
+            log "resources/" OFFSET SIZE
+        endif
+        goto TMP MEMORY_FILE10
+    next i
+endfunction
